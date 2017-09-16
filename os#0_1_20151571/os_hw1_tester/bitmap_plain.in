@@ -1,0 +1,24 @@
+create bitmap bm0 8
+create bitmap bm1 16
+create bitmap bm2 32
+create bitmap bm3 64
+create bitmap bm4 128
+create bitmap bm5 1024
+create bitmap bm6 16384
+create bitmap bm7 65536
+create bitmap bm8 35
+create bitmap bm9 5
+dumpdata bm0
+dumpdata bm1
+dumpdata bm9
+delete bm0
+delete bm1
+delete bm2
+delete bm3
+delete bm4
+delete bm5
+delete bm6
+delete bm7
+delete bm8
+delete bm9
+quit

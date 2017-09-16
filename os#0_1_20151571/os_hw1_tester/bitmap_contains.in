@@ -1,0 +1,16 @@
+create bitmap bm0 16
+dumpdata bm0
+bitmap_mark bm0 0 
+bitmap_mark bm0 5 
+bitmap_mark bm0 7 
+bitmap_mark bm0 8 
+bitmap_mark bm0 9 
+bitmap_mark bm0 15 
+dumpdata bm0
+bitmap_contains bm0 0 2 true
+bitmap_contains bm0 0 1 false
+bitmap_contains bm0 7 3 true
+bitmap_contains bm0 7 3 false
+bitmap_contains bm0 6 3 true
+delete bm0
+quit

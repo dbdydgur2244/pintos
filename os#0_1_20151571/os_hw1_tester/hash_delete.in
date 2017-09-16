@@ -1,0 +1,18 @@
+create hashtable hash0
+dumpdata hash0
+hash_insert hash0 10
+hash_insert hash0 100
+hash_insert hash0 1000
+hash_insert hash0 10000
+hash_insert hash0 10000
+hash_insert hash0 -100
+hash_insert hash0 -1000
+dumpdata hash0
+hash_delete hash0 10
+hash_delete hash0 10000
+dumpdata hash0
+hash_delete hash0 10
+hash_delete hash0 10
+dumpdata hash0
+delete hash0
+quit

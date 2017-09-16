@@ -1,0 +1,19 @@
+create list list0
+dumpdata list0
+list_empty list0
+list_push_back list0 2
+list_push_back list0 5
+list_push_back list0 3
+list_push_back list0 1
+list_push_back list0 4
+dumpdata list0
+list_empty list0
+list_size list0
+list_max list0
+list_min list0
+list_push_back list0 10
+list_push_back list0 0
+list_max list0
+list_min list0
+delete list0
+quit

@@ -1,0 +1,22 @@
+create list list0
+create list list1
+dumpdata list0
+dumpdata list1
+list_push_back list0 1
+list_push_back list0 2
+list_push_back list0 3
+list_push_back list0 4
+list_push_back list0 5
+list_push_back list1 6
+list_push_back list1 7
+list_push_back list1 8
+list_push_back list1 9
+list_push_back list1 10
+dumpdata list0
+dumpdata list1
+list_splice list0 2 list1 1 4
+dumpdata list0
+dumpdata list1
+delete list0
+delete list1
+quit

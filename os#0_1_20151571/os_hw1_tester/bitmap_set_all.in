@@ -1,0 +1,8 @@
+create bitmap bm0 16
+dumpdata bm0
+bitmap_set_all bm0 true
+dumpdata bm0
+bitmap_set_all bm0 false
+dumpdata bm0
+delete bm0
+quit

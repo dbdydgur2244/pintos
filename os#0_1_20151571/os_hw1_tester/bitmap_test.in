@@ -1,0 +1,19 @@
+create bitmap bm0 16
+dumpdata bm0
+bitmap_mark bm0 0 
+bitmap_mark bm0 5 
+bitmap_mark bm0 7 
+bitmap_mark bm0 8 
+bitmap_mark bm0 9 
+bitmap_mark bm0 15 
+dumpdata bm0
+bitmap_test bm0 4
+bitmap_test bm0 5
+bitmap_test bm0 6
+bitmap_test bm0 7
+bitmap_test bm0 8
+bitmap_test bm0 9
+bitmap_test bm0 10
+dumpdata bm0
+delete bm0
+quit

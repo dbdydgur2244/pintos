@@ -1,0 +1,21 @@
+create list list0
+create list list1
+create list list2
+create list list3
+create list list4
+create list list5
+create list list6
+create list list7
+create list list8
+create list list9
+delete list0
+delete list1
+delete list2
+delete list3
+delete list4
+delete list5
+delete list6
+delete list7
+delete list8
+delete list9
+quit

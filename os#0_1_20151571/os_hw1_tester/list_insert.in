@@ -1,0 +1,12 @@
+create list list0
+dumpdata list0
+list_insert list0 0 1
+dumpdata list0
+list_insert list0 1 2
+list_insert list0 0 3
+list_insert list0 1 4
+list_insert list0 0 5
+list_insert list0 5 6
+dumpdata list0
+delete list0
+quit
