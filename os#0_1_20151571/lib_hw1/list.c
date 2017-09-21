@@ -542,10 +542,10 @@ list_swap(struct list_elem *a, struct list_elem *b){
     struct list_elem *next_a = list_next(a);
     struct list_elem *next_b = list_next(b);
     list_remove(a); list_remove(b);
-    list_insert(before_a, b);
-    list_insert(b, next_a);
-    list_insert(before_b, a);
-    list_insert(a, next_b);
+    list_insert(b, before_a);
+    list_insert(next_a, b);
+    list_insert(a, before_b);
+    list_insert(next_b, a);
 }
 
 /* Shuffle the list */
