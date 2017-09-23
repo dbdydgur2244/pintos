@@ -167,7 +167,6 @@ struct list_elem *list_max (struct list *, list_less_func *, void *aux);
 struct list_elem *list_min (struct list *, list_less_func *, void *aux);
 
 /* Pintos Project 0-2 */
-bool list_less_func(struct list_elem *a, struct list_elem *b);
 void list_swap(struct list_elem *a, struct list_elem *b);
 void list_shuffle(struct list *list);
 

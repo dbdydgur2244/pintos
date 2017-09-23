@@ -1,18 +1,19 @@
-CC = gcc
+CC=gcc
 
-CFLAG = -W -Wall -g
-SOURCES = list.c bitmap.c hash.c main.c
-OBJECTS = $(SOURCE:.c=.o)
+CFLAG=-W -Wall -g
+SOURCES=list.c bitmap.c hash.c main.c
+OBJECTS=$(SOURCES:.c=.o)
 
-TARGET = a.out
+TARGET=testlib
 
-all : $(SOURCES) $(TARGET)
+all: $(SOURCES) $(TARGET)
 
-$(TARGET) : $(OBJECTS)
-	$(CC) -o $@ $^
+$(TARGET): $(OBJECTS)
+		$(CC) #(OBJECTS) -o $@
 
 .c.o:
-	$(CC) -c $< -o $@ $(CFLAGS)
+		$(CC) -c $< -o $@ $(CFLAGS)
 
 clean:
-	rm *.o $(TARGET)
+		rm *.o $(TARGET)
+

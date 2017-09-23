@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include "command.h"
 
+#define uprint(size) printf("%zu\n", size);
+
 struct list list[11];
 struct hash hashtable[11];
 struct bitmap bitmap[11];
-int list_num, hash_num, bitmap_num;
 
 int main(void){
     char input[256];
     char *token, *type, *ds_name, **argument, *ds;
     char *arg[8];
-    int arnum, command_num, len;
+    int argnum, command_num, len;
     char *sep[] = { ' ', '_'}
     while(1){
         argnum = 0;
@@ -21,6 +22,7 @@ int main(void){
             arg[argnum++] = token;
             token = strtok(input, sep);
         }
+        arg[argnum] = NULL;
         type = arg[0];
         for ( int i = 0; i < 4; ++i ){
             if ( strcmp(type, command[i]) == 0 ){
@@ -31,7 +33,10 @@ int main(void){
         switch(command_num){
             case 0: // create
                 ds = arg[1]; ds_name = arg[2];
-                command_create(ds, ds_name);
+                if ( arg[3] != NULL )
+                    command_create(ds, ds_name, atoi(arg[3]));
+                else
+                    command_create(ds, ds_name, 0);
                 break;
 
             case 1: //delete
@@ -67,7 +72,14 @@ print_list(struct list *list){
 
 void
 print_hash(struct hash *h){
-
+    struct hash_iterator i;
+    struct hash_item *hash_item;
+    hash_first(&i, h);
+    while (hash_next (&i)){
+        hash_item = hash_entry(hash_cur(&i), struct hash_item, elem);
+        printf("%d ", hash_item->data);
+    }
+    if ( !hash_empty(h) ) printf("\n");
 }
 
 void
@@ -76,9 +88,8 @@ print_bitmap(struct bitmap *b){
 }
 
 void
-command_create(char *ds, char *ds_name){
+command_create(char *ds, char *ds_name, int bit_cnt){
     char *bit, *name;
-    int bit_cnt;
     int num;
     if ( strcmp(ds, "list") == 0 ){
         num = ds_name[4] -'0';
@@ -94,8 +105,8 @@ command_create(char *ds, char *ds_name){
         name = strtok(ds_name, " ");
         bit = strtok(NULL, " ");
         bit_cnt = atoi(bit);
-        num = name[6] -'0';
-        bitmap_command_create(&bitmap[name]);
+        num = name[2] -'0';
+        bitmap_command_create(&bitmap[name], bit_cnt);
     }
 }
 
@@ -121,7 +132,7 @@ command_delete(char *ds_name){
 void
 command_argument(char *command, char **argument){
     int len = strlen(ds_name);
-    
+
     if ( strstr(command, "list") != NULL ){
         list_commands(command, argument); 
     }
@@ -215,8 +226,16 @@ list_commands (char *command, char **argument){
         case 16:
             list_command_max(argument);
             break;
-        default:
+        case 17:
             list_command_min(argument);
+            break;
+        case 18:
+            list_command_swap(argument);
+            break;
+        case 19:
+            list_command_shuffle(argument);
+            break;
+        default:
             break;
     }
 }
@@ -263,11 +282,11 @@ list_command_splice (struct list_item *list_item){
     list1 = list[list1_num]; list2 = list[list2_num];
 
     for ( int i = 0, before = list_begin(list1);  i < pos && before != list_end(list1); ++i, before = list_next(before) );
-    
+
     for ( int i = 0, first = list_begin(list2);  i < from && first != list_end(list2); ++i, first = list_next(first) );
-      
+
     for ( int i = 0, last = list_begin(list2);  i < to && last != list_end(list2); ++i, last = list_next(last) );
-    
+
     list_splice(before, first, last);
 }
 
@@ -386,7 +405,7 @@ list_command_size (char **argument){
 
     nlist = &list[list_num];
     size = list_size(nlist);
-    printf("%d\n", size);
+    printf("%zu\n", size);
 }
 
 void
@@ -437,10 +456,10 @@ list_command_insert_ordered(char **argument){
     struct list *nlist;
     struct list_elem *elem;
     struct list_item *new_list = malloc(sizeof list_item);
-    
+
     name = argument[0];
     list_num = name[4] - '0';
-    
+
     data = atoi(argument[1]);
     list_item->data = data;
 
@@ -492,153 +511,462 @@ list_command_min (char **argument){
     printf("%d\n", item->data);
 }
 
+void
+list_command_swap(char **argument){
+    char *list_name;
+    int list_num, first, second;
+    struct list *nlist;
+    struct list_elem *a, *b;
+    name = argument[0];
+    list_num = name[4] - '0';
+    first = atoi(argument[1]); second = atoi(argument[2]);
+    nlist = &list[list_num];
+    for ( int i = 0, a = list_begin(nlist); i < first && a != list_end(nlist);
+            ++i, a = list_next(a) );
+    for ( int i = 0, b = list_begin(nlist); i < first && b != list_end(nlist);
+            ++i, b = list_next(b) );
+    list_swap(a, b);
+}
+
+void
+list_command_shuffle(char **argument){
+   char *list_name;
+   int list_num;
+   struct list *l;
+   name = argument[0];
+   list_num = name[4] - '0';
+   l = &list[list_num] ;
+   list_shuffle(l);
+}
+
 /* hash functions */
 void
 hash_commands (char *command, char **argument){
-
+    size_t command_size = (sizeof hash_command) / (sizeof char *);
+    int command_num;
+    for ( int i = 0; i < command_size; ++i){
+        if ( strcmp(hash_command[i], command)  == 0){
+            command_num = i;
+            break;
+        }
+    }
+    switch(command_num){
+        case 0:
+            hash_command_insert(argument);
+            break;
+        case 1:
+            hash_command_replace(argument);
+            break;
+        case 2:
+            hash_command_find(argument);
+            break;
+        case 3:
+            hash_command_clear(argument);
+            break;
+        case 4:
+            hash_command_delete(argument);
+            break;
+        case 5:
+            hash_command_size(argument);
+            break;
+        case 6:
+            hash_command_empty(argynebt);
+            break;
+        case 7:
+            hash_command_apply(argument);
+            break;
+        default:
+            break;
+    }
 }
 
-struct hash *
+bool
+hash_less(struct hash_elem *A, struct hash_elem *B, void *aux){
+    struct hash_item *a, *b;
+    a = hash_entry(A, struct hash_item, elem);
+    b = hash_entry(B, struct hash_item, elem);
+    return (a->data) < (b->data);
+}
+
+bool
+hash_destructor(struct hash_elem *e, void *aux){
+    struct hash_item *hash_item;
+    hash_item = (e, struct hash_elem, elem );
+    free(hash_item);
+}
+
+void
+hash_square(struct hash_elem *e, void *aux){
+    struct hash_item *hash_item;
+    int data;
+    hash_item = (e, struct hash_elem, elem);
+    data = hash_item->data;
+    hash_item->data = data * data;
+}
+
+
+void
+hash_triple(struct hash_elem *e, void *aux){
+    struct hash_item *hash_item;
+    int data;
+    hash_item = (e, struct hash_elem, elem);
+    data = hash_item->data;
+    hash_item->data = data * data * data;
+}
+
+void
 hash_command_create (char *hash_name){
-
-}
-
-struct hash_elem *
-hash_command_insert (struct hash *h, struct hash_item *hash_item){
-
-}
-
-struct hash_elem *
-hash_command_replace (struct hash *h, struct hash_item *hash_item){
-
-}
-
-struct hash_elem *
-hash_command_find (struct hash *h, struct hash_item *hash_item){
-
-}
-struct hash_elem *
-hash_command_delete (struct hash *h, struct hash_item *hash_item){
-
+    int hash_num = hash_name[4] -'0';
+    hash_init(&hashtable[hash_num], hash_int, hash_less, NULL);
 }
 
 void
-hash_command_clear (struct hash *h){
-
-}
-
-size_t
-hash_command_size (struct hash *h){
-
-}
-
-bool
-hash_command_empty (struct hash *h){
-
+hash_command_insert (char **argument){
+    char *hash_name = argument[0];
+    int data = atoi(argument[1]);
+    int hash_num = hash_name[4] - '0';
+    struct hash_item *hash_item = malloc(sizeof hash_item);
+    hash_item->data = data;
+    hash_insert(&hashtable[hash_num], &(hash_item->elem)); 
 }
 
 void
-hash_command_apply (struct hash *h, hash_action_func *action){
-
+hash_command_replace (char **argument){
+    char *hash_name = argument[0];
+    int item = atoi(argument[1]);
+    int hash_num = hash_name[4] - '0';
+    struct hash_item *hash_item = malloc(sizeof hash_item);
+    hash_item->item = item;
+    hash_replace(&hashtable[hash_num], &(hash_item->elem));
 }
 
-size_t
-hash_size (struct hash *h){
-
+void
+hash_command_find (char **argument){
+    char *hash_name = argument[0];
+    int data = atoi(argument[1]);
+    int hash_num = hash_name[4] - '0';
+    struct hash_item *hash_item;
+    struct hash_elem *e = hash_find(&hashtable[hash_num], &(hash_item->elem));
+    hash_item = hash_entry(e, struct hash_item, elem);
+    printf("%d\n", hash_item->data);
 }
 
-bool
-hash_empty (struct hash *h){
+void
+hash_command_delete (char **argumnet){
+    char *hash_name = argument[0];
+    int data = atoi(argument[1]) ;
+    int hash_num = hash_name[4] - '0';
+    struct hash_item *hash_item;
+    struct hash_elem *e = hash_find(&hashtable[hash_num], &(hash_item->elem));
+    hash_delete(&hashtable[hash_num], e);
+}
 
+void
+hash_command_clear (char **argument){
+    char *hash_name = argument[0];
+    int hash_num = hash_name[4] - '0';
+    hash_clear(&hashtable[hash_num], hash_destructor); 
+}
+
+void
+hash_command_size (char **argument){
+    char *hash_name = argument[0];
+    int hash_num = hash_name[4] - '0';
+    size_t size = hash_size(&hashtable[hash_num]);
+    printf("%zu\n", size);
+}
+
+void
+hash_command_empty (char **argument){
+    char *hash_name = argument[0];
+    int hash_num = hash_name[4] - '0';
+    bool is_empty = hash_empty(&hashtable[hash_num]);
+    if ( is_empty ) puts("true");
+    else puts("false");
+}
+
+void
+hash_command_apply (char **argument){
+    char *hash_name = argument[0];
+    int hash_num = hash_name[4] - '0';
+    char *hash_func = argument[1];
+    if ( strcmp(hash_func, "square") == 0){
+        hash_apply(&hashtable[hash_num], hash_square);
+    }
+    if ( strcmp(hash_func, "triple") == 0){
+        hash_apply(&hash_size[hash_num], hash_triple);
+    }
+}
+
+void
+hash_command_size (char **argument){
+    char *hash_name = argument[0];
+    int hash_num = hash_name[4] - '0';
+    size_t size;
+    size = hash_size(&hashtable[hash_num]);
+    printf("%zu\n", size);
+}
+
+void
+hash_command_empty (char **argument){
+    char *hash_name = argument[0];
+    int hash_num = hash_name[4] - '0';
+    bool is_empty;
+    is_empty = hash_empty(&hashtable[hash_num]);
 }
 
 /* bitmap functions */
 void
 bitmap_commands (char *command, char **argument){
-
-}
-struct bitmap *
-bitmap_command_create (char* bitmap_name){
-
-}
-
-size_t 
-bitmap_command_size (struct bitmap *b){
-
-}
-
-void 
-bitmap_command_set (struct bitmap *b, size_t idx, bool value){
-
-}
-
-void 
-bitmap_command_mark (struct bitmap *b, size_t bit_idx){
-
-}
-
-void 
-bitmap_command_reset (struct bitmap *b, size_t bit_idx){
-
-}
-
-void 
-bitmap_command_flip (struct bitmap *b, size_t bit_idx){
-
-}
-
-bool
-bitmap_command_test (const struct bitmap *b, size_t bit_idx){
-
-}
-
-void 
-bitmap_command_set_all (struct bitmap *b, bool value){
-
-}
-
-void 
-bitmap_command_set_multiple (struct bitmap *b, size_t start, size_t cnt, bool value){
-
-}
-
-size_t 
-bitmap_command_count (const struct bitmap *b, size_t start, size_t cnt, bool vaiue){
-
-}
-
-bool
-bitmap_command_contains (const struct bitmap *b, size_t start, size_t cnt, bool value){
-
-}
-
-bool
-bitmap_command_any (const struct bitmap *b, size_t start, size_t cnt){
-
-}
-
-bool
-bitmap_command_none (const struct bitmap *b, size_t start, size_t cnt){
-
-}
-
-bool
-bitmap_command_all (const struct bitmap *b, size_t start, size_t cnt){
-
-}
-
-size_t
-bitmap_command_scan (const struct bitmap *b, size_t start, size_t cnt, bool value){
-
-}
-
-size_t
-bitmap_command_scan_and_flip (struct bitmap *b, size_t start, size_t cnt, bool value){
-
-
+    size_t command_size = (sizeof bitmap_command) / (sizeof char *);
+    int command_num;
+    for ( int i = 0; i < command_size; ++i){
+        if ( strcmp(bitmap_command[i], command)  == 0){
+            command_num = i;
+            break;
+        }
+    }
+    switch(command_num){
+        case 0:
+            bitmap_command_size(argument);
+            break;
+        case 1:
+            bitmap_command_set(argument);
+            break;
+        case 2:
+            bitmap_command_mark(argument);
+            break;
+        case 3:
+            bitmap_command_reset(argument);
+            break;
+        case 4:
+            bitmap_command_flip(argument);
+            break;
+        case 5:
+            bitmap_command_test(argument);
+            break;
+        case 6:
+            bitmap_command_set_all(argument);
+            break;
+        case 7:
+            bitmap_command_set_multiple(argument);
+            break;
+        case 8:
+            bitmap_command_count (argument);
+            break;
+        case 9:
+            bitmap_command_contains (argument);
+            break;
+        case 10:
+            bitmap_command_any (argument);
+            break;
+        case 11:
+            bitmap_command_none (argument);
+            break;
+        case 12:
+            bitmap_command_all (argument);
+            break;
+        case 13:
+            bitmap_command_scan (argument);
+            break;
+        case 14:
+            bitmap_command_scan_and_flip (argument);
+            break;
+        case 15:
+            bitmap_command_dump (argument);
+            break;
+        case 16:
+            bitmap_command_expand (argument);
+        default:
+            break;
+    }
 }
 
 void
-bitmap_command_dump (const struct bitmap * b){
+bitmap_command_create (char **argument){
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    b = bitmap_create(bit_cnt);
+}
 
+void
+bitmap_command_size (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    size_t size;
+    size = bitmap_size(&bitmap[bitmap_num]);
+    printf("%zu\n", size);
+}
+
+void 
+bitmap_command_set (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    int bit_idx = atoi(argument[1]);
+    char *bool_value = argument[2];
+    bool value;
+    value = ( strcmp(bool_value, "true") == 0 ) ? true : false;
+    bitmap_set(&bitmap[bitmap_num], bit_idx, value);
+}
+
+void 
+bitmap_command_mark (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int bit_idx = atoi(argument[1]);
+    bitmap_mark(b, bit_idx);
+}
+
+void 
+bitmap_command_reset (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int bit_idx = atoi(argument[1]);
+    bitmap_reset(b, bit_idx); 
+}
+
+void 
+bitmap_command_flip (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int bit_idx = atoi(argument[1]);
+    bitmap_flip(b, bit_idx);
+}
+
+void
+bitmap_command_test (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int bit_idx = atoi(argument[1]);
+    bool result;
+    result = bitmap_test(b, bit_idx);
+    if ( result ) printf("true\n");
+    else printf("false\n");
+}
+
+void 
+bitmap_command_set_all (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    bool value = ( strcmp(argument[1], "true") == 0 ) ? true : false;
+    bitmap_set_all(b, value);
+}
+
+
+void 
+bitmap_command_set_multiple (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool value = ( strcmp(argument[3], "true") == 0 ) ? true : false;
+    bitmap_set_multiple(b, start, cnt, value);
+}
+
+void
+bitmap_command_count (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool value = ( strcmp(argument[3], "true") == 0 ) ? true : false;
+    size_t value_cnt;
+    value_cnt = bitmap_count(b, start, cnt, value);
+    printf("%zu\n", value_cnt);
+}
+
+void
+bitmap_command_contains (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool value = ( strcmp(argument[3], "true") == 0 ) ? true : false;
+    bool is_contain;
+    is_contain = bitmap_contains(b, start, cnt, value);
+    if ( is_contain ) printf("true\n");
+    else printf("false\n");
+}
+
+void
+bitmap_command_any (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool is_any_contain;
+    is_any_contain = bitmap_any(b, start, cnt);
+    if ( is_any_contain ) printf("true\n");
+    else printf("false\n");
+}
+
+void
+bitmap_command_none (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool is_none;
+    is_none = bitmap_none(b, start, cnt);
+    if ( is_none ) printf("true\n");
+    else printf("false\n");
+}
+
+void
+bitmap_command_all (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool is_all;
+    is_all = bitmap_all(b, start, cnt);
+    if ( is_all ) printf("true\n");
+    else printf("false\n");
+}
+
+void
+bitmap_command_scan (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool value = ( strcmp(argument[3], "true") == 0 ) ? true : false;
+    size_t bit_idx;
+    bit_idx = bitmap_scan(b, start, cnt, value);
+    printf("%zu\n", bit_idx);
+}
+
+void
+bitmap_command_scan_and_flip (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int start = atoi(argument[1]), cnt = atoi(argument[2]);
+    bool value = ( strcmp(argument[3], "true") == 0 ) ? true : false;
+    size_t bit_idx;
+    bit_idx = bitmap_scan(b, start, cnt, value);
+    printf("%zu\n", bit_idx);
+}
+
+void
+bitmap_command_dump (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    bitmap_dump(b); 
+}
+
+void
+bitmap_command_expand (char **argument){
+    char *bitmap_name = argument[0];
+    int bitmap_num = bitmap_name[2] - '0';
+    struct bitmap *b = &bitmap[bitmap_num];
+    int size = atoi(argument[1]);
+    b = bitmap_expand(b, size);
+    bitmap[bitmap_num] = b;
 }

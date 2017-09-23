@@ -44,7 +44,7 @@ hash_init (struct hash *h,
 }
 
 /* Removes all the elements from H.
-   
+   /findu
    If DESTRUCTOR is non-null, then it is called for each element
    in the hash.  DESTRUCTOR may, if appropriate, deallocate the
    memory used by the hash element.  However, modifying hash

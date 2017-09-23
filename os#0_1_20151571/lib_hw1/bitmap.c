@@ -376,13 +376,12 @@ bitmap_dump (const struct bitmap *b)
 
 struct bitmap *bitmap_expand (struct bitmap *bitmap, int size){
     if ( bitmap != NULL ){
-        bitmap->bit_cnt = bitmap->bit_cnt + size;
-        bitmap->bits = realloc (bitmap->bits, bitmap->bit_cnt);
+        bitmap->bits = realloc (bitmap->bits, bitmap->bit_cnt + size);
         if ( bitmap->bits != NULL ){
-            bitmap_set_multiple(bitmap, bitmap->bit_cnt-size, size, false);
-            return bitmap;
+            bitmap_set_multiple(bitmap, bitmap->bit_cnt, size, false);
         }
+        bitmap->bit_cnt = bitmap->bit_cnt + size;
     }
-    return NULL;
+    return bitmap;
 }
 
