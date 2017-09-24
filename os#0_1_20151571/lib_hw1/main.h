@@ -3,11 +3,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "bitmap.h"
 #include "hash.h"
 #include "list.h"
-#include "round.h"
-#include "debug.h"
 
 struct list_item{
     struct list_elem elem;
@@ -18,6 +17,13 @@ struct hash_item{
     struct hash_elem elem;
     int data;
 };
+
+struct all_in_one{
+    struct list lists[10];
+    struct hash hash_table[10];
+    struct bitmap *bitmaps[10];
+};
+
 
 const char *command[] = {
     "create",
@@ -51,75 +57,79 @@ void print_list(struct list *list);
 void print_hash(struct hash *h);
 void print_bitmap(struct bitmap *b);
 
+/* delete function */
+
+void delete_list(struct list *list);
+void delete_hash(struct hash *hash);
+void delete_bitmap(struct bitmap **b);
 /* command process function */
-void command_create(char *data_structure, char *name, int bit_cnt);
-void command_delete(char *ds_name);
-void command_argument(char *command, char **argument);
-void command_dump(char *ds_name)
+void command_create(struct all_in_one *, char *data_structure, char *name, int bit_cnt);
+void command_delete(struct all_in_one *, char *ds_name);
+void command_argument(struct all_in_one *, char *command, char **argument);
+void command_dump(struct all_in_one *, char *ds_name);
+
 
 /* list functions */
-void list_commands (char *command, char **argument);
-bool list_less(struct list_elem *list_elem1, struct list_elem *list_elem2);
+void list_commands (struct list lists[10], char *command, char **argument);
+bool list_less(struct list_elem *list_elem, struct list_elem *list_elem2);
 void list_command_create(struct list *list);
-void list_command_insert (char **argument);
-void list_command_splice (char **argument);
-void list_command_push_front (char **argument);
-void list_command_push_back (char **argument);
-void list_command_remove (char **argument);
-void list_command_pop_front (char **argument);
-void list_command_pop_back (char **argument);
-void list_command_front (char **argument);
-void list_command_back (char **argument);
-void list_command_size (char **argument);
-void list_command_empty (char **argument);
-void list_command_reverse (char **argument);
-void list_command_sort (char **argument);
-void list_command_insert_ordered(char **argument);
-void list_command_unique (char **argument);
-void list_command_max (char **argument);
-void list_command_min (char **argument);
-void list_command_swap(char **argument);
-void list_command_shuffle(char **argument);
+void list_command_insert (struct list lists[10], char **argument);
+void list_command_splice (struct list lists[10], char **argument);
+void list_command_push_front (struct list lists[10], char **argument);
+void list_command_push_back (struct list lists[10], char **argument);
+void list_command_remove (struct list lists[10], char **argument);
+void list_command_pop_front (struct list lists[10], char **argument);
+void list_command_pop_back (struct list lists[10], char **argument);
+void list_command_front (struct list lists[10], char **argument);
+void list_command_back (struct list lists[10], char **argument);
+void list_command_size (struct list lists[10], char **argument);
+void list_command_empty (struct list lists[10], char **argument);
+void list_command_reverse (struct list lists[10], char **argument);
+void list_command_sort (struct list lists[10], char **argument);
+void list_command_insert_ordered(struct list lists[10], char **argument);
+void list_command_unique (struct list lists[10], char **argument);
+void list_command_max (struct list lists[10], char **argument);
+void list_command_min (struct list lists[10], char **argument);
+void list_command_swap(struct list lists[10], char **argument);
+void list_command_shuffle(struct list lists[10], char **argument);
 
 /* hash command functions */
-void hash_commands (char *command, char **argument);
+void hash_commands (struct hash hash_table[10], char *command, char **argument);
 
-bool hash_less(struct hash_elem *, struct hash_elem *);
+bool hash_less(struct hash_elem *, struct hash_elem *, void *aux);
 void hash_destructor(struct hash_elem *, void *aux);
 void hash_square(struct hash_elem *, void *aux);
 void hash_triple(struct hash_elem *, void *aux);
 
-void hash_command_create (char *hash_name);
-void hash_command_insert (char **argument);
-void hash_command_replace (char **argument);
-void hash_command_find (char **argument);
-void hash_command_delete (char **argument);
-void hash_command_clear (char **argument);
-void hash_command_size (char **argument);
-void hash_command_empty (char **argument);
-void hash_command_apply (char **argument);
-void hash_command_size (char **argument);
-void hash_command_empty (char **argument);
+void hash_command_create (struct hash *h);
+void hash_command_insert (struct hash hash_table[10], char **argument);
+void hash_command_replace (struct hash hash_table[10], char **argument);
+void hash_command_find (struct hash hash_table[10], char **argument);
+void hash_command_delete (struct hash hash_table[10], char **argument);
+void hash_command_clear (struct hash hash_table[10], char **argument);
+void hash_command_size (struct hash hash_table[10], char **argument);
+void hash_command_empty (struct hash hash_table[10], char **argument);
+void hash_command_apply (struct hash hash_table[10], char **argument);
 
 /* bitmap functions */
-void bitmap_commands (char *command, char **argument);
-void bitmap_command_create (struct bitmap *b, int bit_cnt);
-void bitmap_command_size (char **argument);
-void bitmap_command_set (char **argument)
-void bitmap_command_mark (char **argument);
-void bitmap_command_reset (char **argument);
-void bitmap_command_flip (char **argument);
-void bitmap_command_test (char **argument);
-void bitmap_command_set_all (char **argument);
-void bitmap_command_set_multiple (char **argument);
-void bitmap_command_count (char **argument);
-void bitmap_command_contains (char **argument);
-bool bitmap_command_any (char **argument);
-void bitmap_command_none (char **argument);
-void bitmap_command_all (char **argument);
-void bitmap_command_scan (char **argument);
-void bitmap_command_scan_and_flip (char **argument); 
-void bitmap_command_dump (char **argument);
-void bitmap_command_expand (char **argument);
+void bitmap_commands (struct bitmap *bitmaps[10], char *command, char **argument);
+void bitmap_command_create (struct bitmap **b, int bit_cnt);
+void bitmap_command_size (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_set (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_mark (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_reset (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_flip (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_test (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_set_all (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_set_multiple (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_count (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_contains (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_any (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_none (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_all (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_scan (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_scan_and_flip (struct bitmap *bitmaps[10], char **argument); 
+void bitmap_command_dump (struct bitmap *bitmaps[10], char **argument);
+void bitmap_command_expand (struct bitmap *bitmaps[10], char **argument);
 
 #endif

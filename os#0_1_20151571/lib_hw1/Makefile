@@ -9,7 +9,7 @@ TARGET=testlib
 all: $(SOURCES) $(TARGET)
 
 $(TARGET): $(OBJECTS)
-		$(CC) #(OBJECTS) -o $@
+		$(CC) $(OBJECTS) -o $@
 
 .c.o:
 		$(CC) -c $< -o $@ $(CFLAGS)

@@ -537,15 +537,12 @@ list_min (struct list *list, list_less_func *less, void *aux)
  * If a, b is continuos than a*/
 void
 list_swap(struct list_elem *a, struct list_elem *b){
-    struct list_elem *before_a = list_prev(a);
-    struct list_elem *before_b = list_prev(b);
-    struct list_elem *next_a = list_next(a);
-    struct list_elem *next_b = list_next(b);
-    list_remove(a); list_remove(b);
-    list_insert(b, before_a);
-    list_insert(next_a, b);
-    list_insert(a, before_b);
-    list_insert(next_b, a);
+    a->prev->next = b;
+    a->next->prev = b;
+    b->prev->next= a;
+    b->next->prev = a;
+    swap(&(a->next), &(b->next));
+    swap(&(a->prev), &(b->prev));
 }
 
 /* Shuffle the list */
@@ -562,4 +559,10 @@ list_shuffle(struct list *list){
             if ( val % 2 ) list_swap(list_e, list_tmp);
         }
     }
+}
+
+void swap_list(struct list **a, struct list **b){
+    struct list *tmp = *a;
+    *a = *b;
+    *b = tmp;
 }

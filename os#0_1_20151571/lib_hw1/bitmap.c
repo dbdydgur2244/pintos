@@ -329,7 +329,21 @@ bitmap_scan_and_flip (struct bitmap *b, size_t start, size_t cnt, bool value)
     bitmap_set_multiple (b, idx, cnt, !value);
   return idx;
 }
-
+
+struct bitmap *
+bitmap_expand (struct bitmap *bitmap, int size){
+    struct bitmap *b;
+    size_t bit_size, i;
+    b = bitmap_create(bitmap->bit_cnt + size);
+    bit_size = bitmap->bit_cnt;
+    for (i = 0; i < bit_size; ++i){
+        if ( bitmap_test(bitmap, i) )
+            bitmap_mark(b, i); 
+    }
+    free(bitmap);
+    return b;
+}
+
 /* File input and output. */
 
 #ifdef FILESYS
@@ -371,17 +385,5 @@ bitmap_write (const struct bitmap *b, struct file *file)
 void
 bitmap_dump (const struct bitmap *b) 
 {
-  hex_dump (0, b->bits, byte_cnt)(b->bit_cnt)/2, false);
+  hex_dump (0, b->bits, byte_cnt(b->bit_cnt)/2, false);
 }
-
-struct bitmap *bitmap_expand (struct bitmap *bitmap, int size){
-    if ( bitmap != NULL ){
-        bitmap->bits = realloc (bitmap->bits, bitmap->bit_cnt + size);
-        if ( bitmap->bits != NULL ){
-            bitmap_set_multiple(bitmap, bitmap->bit_cnt, size, false);
-        }
-        bitmap->bit_cnt = bitmap->bit_cnt + size;
-    }
-    return bitmap;
-}
-
