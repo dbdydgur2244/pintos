@@ -573,10 +573,10 @@ hash_commands (struct hash hash_table[10], char *command, char **argument){
             hash_command_find(hash_table, argument);
             break;
         case 3:
-            hash_command_clear(hash_table, argument);
+            hash_command_delete(hash_table, argument);
             break;
         case 4:
-            hash_command_delete(hash_table, argument);
+            hash_command_clear(hash_table, argument);
             break;
         case 5:
             hash_command_size(hash_table, argument);
@@ -590,6 +590,11 @@ hash_commands (struct hash hash_table[10], char *command, char **argument){
         default:
             break;
     }
+}
+
+unsigned
+hash_func(struct hash_elem *e, void *aux){
+    return hash_int((hash_entry(e, struct hash_item, elem))->data);
 }
 
 bool
@@ -628,7 +633,7 @@ hash_triple(struct hash_elem *e, void *aux){
 
 void
 hash_command_create (struct hash *h){
-    hash_init(h, hash_int, hash_less, NULL);
+    hash_init(h, hash_func, hash_less, NULL);
 }
 
 void
@@ -656,10 +661,13 @@ hash_command_find (struct hash hash_table[10], char **argument){
     char *hash_name = argument[0];
     int data = atoi(argument[1]);
     int hash_num = hash_name[4] - '0';
-    struct hash_item *hash_item;
-    struct hash_elem *e = hash_find(&hash_table[hash_num], &(hash_item->elem));
-    hash_item = hash_entry(e, struct hash_item, elem);
-    printf("%d\n", hash_item->data);
+    struct hash_item hash_item;
+    struct hash_elem *e;
+    hash_item.data = data;
+    e = hash_find(&hash_table[hash_num], &(hash_item.elem));
+    if ( e != NULL ) {
+        printf("%d\n", (hash_entry(e, struct hash_item, elem))->data);
+    }
 }
 
 void
@@ -667,9 +675,12 @@ hash_command_delete (struct hash hash_table[10], char **argument){
     char *hash_name = argument[0];
     int data = atoi(argument[1]) ;
     int hash_num = hash_name[4] - '0';
-    struct hash_item *hash_item;
-    struct hash_elem *e = hash_find(&hash_table[hash_num], &(hash_item->elem));
-    hash_delete(&hash_table[hash_num], e);
+    struct hash_item hash_item;
+    struct hash_elem *e;
+    hash_item.data = data;
+    e = hash_find(&hash_table[hash_num], &(hash_item.elem));
+    if ( e != NULL )
+        hash_delete(&hash_table[hash_num], e);
 }
 
 void
@@ -945,7 +956,7 @@ bitmap_command_scan_and_flip (struct bitmap *bitmaps[10], char **argument){
     size_t start = atoi(argument[1]), cnt = atoi(argument[2]);
     bool value = ( strcmp(argument[3], "true") == 0 ) ? true : false;
     size_t bit_idx;
-    bit_idx = bitmap_scan(b, start, cnt, value);
+    bit_idx = bitmap_scan_and_flip(b, start, cnt, value);
     printf("%u\n", bit_idx);
 }
 

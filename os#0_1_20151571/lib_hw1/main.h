@@ -96,6 +96,7 @@ void list_command_shuffle(struct list lists[10], char **argument);
 /* hash command functions */
 void hash_commands (struct hash hash_table[10], char *command, char **argument);
 
+unsigned hash_func(struct hash_elem *e, void *aux);
 bool hash_less(struct hash_elem *, struct hash_elem *, void *aux);
 void hash_destructor(struct hash_elem *, void *aux);
 void hash_square(struct hash_elem *, void *aux);
