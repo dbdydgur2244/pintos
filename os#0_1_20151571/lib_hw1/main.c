@@ -89,7 +89,6 @@ print_bitmap(struct bitmap *b){
 
 void
 command_create(struct all_in_one *all, char *ds, char *ds_name, int bit_cnt){
-    char *bit, *name;
     int num;
     if ( strcmp(ds, "list") == 0 ){
         num = ds_name[4] - '0';
@@ -415,7 +414,6 @@ list_command_empty (struct list lists[10], char **argument){
     char *name;
     int list_num;
     struct list *nlist;
-    size_t size;
     bool is_empty;
     name = argument[0];
     list_num = name[4] - '0';
@@ -447,7 +445,7 @@ list_command_sort (struct list lists[10], char **argument){
     list_num = name[4] - '0';
 
     nlist = &lists[list_num];
-    list_sort(nlist, list_less, NULL );
+    list_sort(nlist, list_less, NULL);
 
 }
 
@@ -456,7 +454,6 @@ list_command_insert_ordered(struct list lists[10], char **argument){
     char *name;
     int list_num, data;
     struct list *nlist;
-    struct list_elem *elem;
     struct list_item *new_list = malloc( sizeof (struct list_item) );
 
     name = argument[0];

@@ -429,11 +429,7 @@ remove_elem (struct hash *h, struct hash_elem *e)
 }
 
 unsigned hash_int_2(int i){
-    const int mod = 1087;
-    unsigned key = 0;
-    while(i){
-        key = (key + i % mod) % mod;
-        i /= mod;
-    }
-    return key;
+    const int mod = 611953;
+    i %= mod;
+    return hash_bytes(&i, sizeof i);
 }
