@@ -471,7 +471,7 @@ void
 list_command_unique (struct list lists[10], char **argument){
     char *name1, *name2;
     int list_num1, list_num2;
-    struct list *list1, *list2;
+    struct list *list1, *list2 = NULL;
     name1 = argument[0]; name2 = argument[1];
     list_num1 = name1[4] - '0';
     list1 = &lists[list_num1];
@@ -479,14 +479,8 @@ list_command_unique (struct list lists[10], char **argument){
         list_num2 = name2[4] - '0';
         list2 = &lists[list_num2];
     }
-    else{
-        list2 = malloc ( sizeof(struct list ) );
-        list_init(list2);
-    }
     list_unique(list1, list2, list_less, NULL);
-    if ( name2 == NULL ){
-        swap_list(&list1, &list2);
-    }
+    
 }
 
 void
