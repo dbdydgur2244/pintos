@@ -1,0 +1,5 @@
+*.swp
+*.o
+*.out
+filesys.dsk
+testlib
