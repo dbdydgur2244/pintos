@@ -101,7 +101,7 @@ syscall_exit (int status){
  * arguments and returns the new process's program id(pid).
  * Must return pid -1. */
 pid_t
-exec (const char *cmd_line){
+syscall_exec (const char *cmd_line){
     
 }
 
