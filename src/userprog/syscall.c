@@ -14,7 +14,8 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
-void syscall_get_args(void *esp, void *args[], int syscallnum){
+void
+syscall_get_args(void *esp, void *args[], int syscallnum){
     
     switch(syscallnum){
         case SYS_HALT:
@@ -58,20 +59,20 @@ syscall_handler (struct intr_frame *f UNUSED)
             syscall_halt();
             break;
         case SYS_EXIT:
-            syscall_exit(*(int *)args[0]);
+            syscall_exit((int)*(int *)args[0]);
             break;
         case SYS_EXEC:
-            syscall_exec((char *)args[0]);
+            syscall_exec((char *)*(int *)args[0]);
             break;
         /* yonghyuk */
         case SYS_WAIT:
-            syscall_wait(*(pid_t *)args[0]);
+            syscall_wait((int)*(int *)args[0]);
             break;
         case SYS_READ:
-            sysca_read (*(int *)args[0], args[1] , *(size_t *)args[2]);
+            sysca_read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
             break;
         case SYS_WRITE:
-            syscall_write(*(int *)args[0], args[1], *(size_t *)args[2]);
+            syscall_write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
             break;
         default:
             break;
@@ -115,6 +116,7 @@ syscall_exec (const char *cmd_line){
  * process exits*/
 int
 syscall_wait (pid_t pid){
+    /* how to find process by pid */
 
 }
 

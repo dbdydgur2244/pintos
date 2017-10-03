@@ -100,6 +100,7 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+    bool wait_status                    /* Detects wait_status. For project 1*/
   };
 
 /* If false (default), use round-robin scheduler.

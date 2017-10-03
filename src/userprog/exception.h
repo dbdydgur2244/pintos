@@ -9,4 +9,6 @@
 void exception_init (void);
 void exception_print_stats (void);
 
+bool page_fault_check(struct intr_frame *f)
+
 #endif /* userprog/exception.h */
