@@ -384,7 +384,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
     *eip = (void (*) (void)) ehdr.e_entry;
 
     construct_ESP(esp,argnum,args);
+
     hex_dump(*esp,*esp,30,true);
+
     success = true;
 
 done:
