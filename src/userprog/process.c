@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <list.h>
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
 #include "userprog/tss.h"
@@ -15,12 +16,65 @@
 #include "threads/init.h"
 #include "threads/interrupt.h"
 #include "threads/palloc.h"
+#include "threads/malloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
+void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
+    int i;
+    char **arg_addr;
+    int first=(int)*esp;
+
+    arg_addr=(char**)malloc(sizeof(char*)*argnum);
+    for(i=argnum-1;i>=0;i--){
+        (*esp)-=(strlen(args[i])+1);
+        memcpy(*esp,args[i],strlen(args[i])+1);
+        arg_addr[i]=(char*)(*esp);
+    }
+    if((first-(int)(*esp))%4!=0){
+        int j;
+        for(j=0;j<4-(first-(int)*esp)%4;j++) {
+            (*esp)-=1;
+            memset(*esp,0,1);
+        }
+    }
+    for(i=argnum-1;i>=0;i--){
+        (*esp)-=4;
+        *((char**)*esp)=arg_addr[i];
+    }
+    *esp-=4;
+    *((char**)*esp)=(*esp)+4;
+    *esp-=4;
+    *((int*)*esp)=argnum;
+    *esp-=4;
+    *((int*)*esp)=0;
+
+
+
+}
+/*parsing arguments, new function*/
+int parse_filename(char*filename,char*args[arg_limit]){
+    char *temp;
+    char *now;
+    char *next;
+    int argnum=0;
+    
+    temp=(char*)malloc(sizeof(char)*(strlen(filename)+1));
+    strlcpy(temp,filename,strlen(filename)+1);
+
+    now=strtok_r(temp,"  ",&next);
+    while(now!=NULL){
+        args[argnum-1]=now;
+        argnum++;
+
+        now=strtok_r(NULL,"  ",&next);
+    }
+    free(temp);
+    return argnum;
+}
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -91,10 +145,11 @@ process_wait (tid_t child_tid UNUSED)
 {
     struct thread *child_t = NULL;
     struct list_elem *e;
-    for  (e = list_begin (&all_list); e != list_end (&all_list);
+    struct list child_list = thread_current()->child_list;
+    for  (e = list_begin (&child_list); e != list_end (&child_list);
             e = list_next(e))
     {
-        struct thread *t= list_entry (e, struct thread, allelem);
+        struct thread *t= list_entry (e, struct thread, child_elem);
         if ( t->tid == child_tid ){
             child_t = t;
             break;
@@ -102,7 +157,6 @@ process_wait (tid_t child_tid UNUSED)
     }
     if ( child_t == NULL || !(child_t->wait_status) )
         return -1;
-
     return -1;
 }
 
@@ -129,8 +183,8 @@ process_exit (void)
         pagedir_activate (NULL);
         pagedir_destroy (pd);
     }
-    exit(cur->status);
-    print("%s: exit(%d)\n",cur->name,cur->status);
+    //exit(cur->status);
+    //print("%s: exit(%d)\n",cur->name,cur->status);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -225,22 +279,26 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
-    struct thread *t = thread_current ();
-    struct Elf32_Ehdr ehdr;
-    struct file *file = NULL;
-    off_t file_ofset;
-    bool success = false;
-    int i;
+  struct thread *t = thread_current ();
+  struct Elf32_Ehdr ehdr;
+  struct file *file = NULL;
+  off_t file_ofset;
+  bool success = false;
+  int i;
+  int argnum;//number of arguments-for constructing esp
+  char *args[arg_limit];//storing arguments-for constructing esp
 
-    /* Allocate and activate page directory. */
-    t->pagedir = pagedir_create ();
-    if (t->pagedir == NULL) 
-        goto done;
-    process_activate ();
+  /* Allocate and activate page directory. */
+  t->pagedir = pagedir_create ();
+  if (t->pagedir == NULL) 
+    goto done;
+  process_activate ();
 
-    /* Open executable file. */
-    file = filesys_open (file_name);
-    if (file == NULL) 
+  argnum = parse_filename(file_name,args);//parsing-Argument Passing
+
+  /* Open executable file. */
+  file = filesys_open (file_name);
+  if (file == NULL) 
     {
         printf ("load: %s: open failed\n", file_name);
         goto done; 
@@ -325,6 +383,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
     /* Start address. */
     *eip = (void (*) (void)) ehdr.e_entry;
 
+    construct_ESP(esp,argnum,args);
+    hex_dump(*esp,*esp,30,true);
     success = true;
 
 done:
@@ -332,7 +392,6 @@ done:
     file_close (file);
     return success;
 }
-
 /* load() helpers. */
 
 static bool install_page (void *upage, void *kpage, bool writable);
@@ -472,7 +531,6 @@ setup_stack (void **esp)
    if memory allocation fails. */
 static bool
 install_page (void *upage, void *kpage, bool writable)
-    *
 {
     struct thread *th = thread_current ();
 

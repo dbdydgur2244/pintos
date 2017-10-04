@@ -92,7 +92,8 @@ struct thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-
+    struct list child_list;
+    struct list_elem child_elem;
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -100,7 +101,7 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
-    bool wait_status                    /* Detects wait_status. For project 1*/
+    bool wait_status;                    /* Detects wait_status. For project 1*/
   };
 
 /* If false (default), use round-robin scheduler.

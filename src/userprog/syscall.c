@@ -1,10 +1,17 @@
 #include "userprog/syscall.h"
+#include "userprog/process.h"
+#include "userprog/exception.h"
 #include <stdio.h>
 #include <syscall-nr.h>
+#include <list.h>
+#include <string.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-#include "../lib/string.h"
-#include "../devices/shutdown.h"
+#include "threads/synch.h"
+#include "devices/input.h"
+#include "devices/shutdown.h"
+#include "filesys/filesys.h"
+#include "filesys/file.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -51,8 +58,8 @@ syscall_handler (struct intr_frame *f UNUSED)
     int syscallnum;
     void *args[4];
     printf ("system call!\n");
-    syscall_get_args()
     syscallnum = *((int *)(f->esp));
+    syscall_get_args(f->esp, args, syscallnum);
     switch(syscallnum){
         /* jimin */
         case SYS_HALT:
@@ -69,7 +76,7 @@ syscall_handler (struct intr_frame *f UNUSED)
             syscall_wait((int)*(int *)args[0]);
             break;
         case SYS_READ:
-            sysca_read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
+            syscall_read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
             break;
         case SYS_WRITE:
             syscall_write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
@@ -77,8 +84,6 @@ syscall_handler (struct intr_frame *f UNUSED)
         default:
             break;
     }
-    handle(syscallnum, f);
-    thread_exit ();
 }
 
 /*----------------------------------------------------- */
@@ -124,6 +129,7 @@ syscall_wait (pid_t pid){
  * Return the number of bytes actually read, or -1 if the file could not be read.
  * Fd 0 reads from the keyboard.
  * Actually, we use only fd is 0. */
+#define READ_FROM_KEYBORAD 0
 int
 syscall_read (int fd, void *buffer, unsigned size){
     char *buf = (char *)buffer;
@@ -136,6 +142,7 @@ syscall_read (int fd, void *buffer, unsigned size){
     return -1;
 }
 
+#define WRITE_TO_CONSOLE 1
 /* Writes ssize bytes from buffer to the open file fd.
  * Returns the number of bytes actually written.
  * Write as many bytes as possible up.
