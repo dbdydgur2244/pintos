@@ -155,6 +155,7 @@ process_wait (tid_t child_tid UNUSED)
             break;
         }
     }
+    
     if ( child_t == NULL || !(child_t->wait_status) )
         return -1;
     return -1;

@@ -5,6 +5,16 @@
 #include <list.h>
 #include <stdint.h>
 
+/* YH added */
+/* This is file list struct for find file
+ * by fd in read and write system call */
+struct file_list
+  {
+    int fd;
+    struct file file;
+    struct list_elem file_elem;
+  };
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -92,8 +102,14 @@ struct thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-    struct list child_list;
-    struct list_elem child_elem;
+
+    /* YH added */
+    /* --------------------------------------------*/
+    struct list child_list;             /* List for child process */
+    struct list file_list;              /* List for file */
+    struct semaphore sema;              /* semaphore for thread syncronize */
+    /* ------------------------------------------- */
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

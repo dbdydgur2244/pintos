@@ -210,7 +210,11 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
-  return tid;
+  /* YH added */
+    list_init ( &(t->child_list) );
+    sema_init ( &(t->sema), (unsigned)1 );
+    file_init(  )
+    return tid;
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
