@@ -4,16 +4,8 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-
-/* YH added */
-/* This is file list struct for find file
- * by fd in read and write system call */
-struct file_list
-  {
-    int fd;
-    struct file file;
-    struct list_elem file_elem;
-  };
+#include "../filesys/file.h"
+#include "synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -105,8 +97,10 @@ struct thread
 
     /* YH added */
     /* --------------------------------------------*/
-    struct list child_list;             /* List for child process */
-    struct list file_list;              /* List for file */
+    struct thread *parent;
+    struct list child_list;             /* List for child process. */
+    struct list_elem child_elem;        /* List element for child process. */
+    struct list file_list;              /* List for file. */
     struct semaphore sema;              /* semaphore for thread syncronize */
     /* ------------------------------------------- */
 

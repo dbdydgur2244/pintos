@@ -118,7 +118,6 @@ syscall_handler (struct intr_frame *f UNUSED)
             syscall_write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
             break;
         case SYS_SEEK:
-            args[1] = (int *)esp + 2;
             break;
         case SYS_TELL:
             break;
@@ -126,7 +125,6 @@ syscall_handler (struct intr_frame *f UNUSED)
             break;
             /* Project 3 and optionally project 4. */
         case SYS_MMAP:
-            args[1] = (int *)esp + 2;
             break;
         case SYS_MUNMAP:
             break;
@@ -174,19 +172,21 @@ syscall_exec (const char *cmd_line){
 /* yonghyuk */
 
 /* Find file by fd(file descripter) */
-struct file_list *
+struct file *
 find_file_by_fd(int fd){
     struct thread *t;
-    struct list *list;
+    struct list list;
     struct list_elem *e;
 
     t = thread_current();
     list = t->file_list;
     for ( e = list_begin(&list); e != list_end(&list); e != list_next(&list)){
-        struct file_list f = list_entry(e, struct file_list, file_elem);
-        if ( f.fd == fd ){
-            return f;
+        /*
+        struct file_elem fe = list_entry(e, struct file_elem, file_elem);
+        if ( fe.fd == fd ){
+            return fe.f;
         }
+        */
     }
     return NULL;
 }
@@ -202,28 +202,39 @@ syscall_wait (pid_t pid){
    process_wait (pid); 
 }
 
+/* Creates a new file called file initially initial_size bytes in size.
+ * Return true if sucessful, false otherwise. */
 bool
 syscall_create (const char *file, unsigned initial_size){
-    struct thread *t;
-    
+    return filesys_create (file, (int)initial_size);
 }
 
+/* Deletes the file called file.
+ * Returns true if successful, false otherwise. */
 bool
 syscall_remove (const char *file){
-
+    return filesys_remove (file);
 }
 
+/*Opens the file called file.
+ * Returns a nonnegative integer handle called a "file descriptor",
+ * or -1 if the file could not be opened.
+ * Fd 0 and 1 are reserved for the console. fd are not inherited by child process.
+ * Each process has an independent set of file descriptors. */
 int
 syscall_open (const char *file){
-
+    struct file *f;
+    f = filesys_open (file);
 }
 
+
+/* Returns the size, in bytes, of the file open as fd. */
 int
 syscall_filesize (int fd){
-    struct file_list *fl = find_file_by_fd (fd);
-    if ( fl == NULL )
+    struct file *f = find_file_by_fd (fd);
+    if ( f == NULL )
         return -1;
-    return (int)file_length (&(fl->file));
+    return (int)file_length (f);
 }
 
 /* Reads size bytes from the file open as fd into buffer.
@@ -242,10 +253,9 @@ syscall_read (int fd, void *buffer, unsigned size){
     }
     else if ( fd < 0 || fd == 1) { }
     else {
-         struct file_list *fl = find_file_by_fd(fd);
-         if ( fl == NULL )
-             return -1;
-         int readed_bytes = (int)file_read(&(fl->file), buffer, (int)size);
+         struct file *f = find_file_by_fd(fd);
+         if ( f == NULL ) return -1;
+         int readed_bytes = (int)file_read(f, buffer, (int)size);
          return readed_bytes;
     }
     return -1;
@@ -265,11 +275,11 @@ syscall_write (int fd, const void *buffer, unsigned size){
     }
     else if ( fd <= 0 ) {}
     else {
-        struct file_list *fl = find_file_by_fd (fd);
-        if ( fl == NULL )
+        struct file *f = find_file_by_fd (fd);
+        if ( f == NULL )
             return -1;
-        int bytes_written = (int)file_write (&(fl->file), buffer, size);
-        file_deny_write ( &(f1->file) );
+        int bytes_written = (int)file_write (f, buffer, size);
+        file_deny_write (f);
         return bytes_written;
     }
     return -1;
@@ -277,21 +287,20 @@ syscall_write (int fd, const void *buffer, unsigned size){
 
 void
 syscall_seek (int fd, unsigned positioin){
-    struct file_list *fl = find_file_by_fd (fd);
-    file_seek ( &(fl->file), (int)positioin );
+    struct file *f = find_file_by_fd (fd);
+    file_seek (f, (int)positioin );
 }
 
 unsigned
 syscall_tell ( int fd ){
-    struct file_list *fl = find_file_by_fd (fd);
-    return (unsigned) file_tell ( &(fl->file) );
-
+    struct file *f = find_file_by_fd (fd);
+    return (unsigned) file_tell (f);
 }
 
 /* not finished */
 void syscall_close ( int fd ){
-   struct file_list *f1 = find_file_by_fd (fd);
-   file_close ( &(fl->file) );
-   list_remove ( &(fl->file_elem) );
+   struct file *f = find_file_by_fd (fd);
+   file_close (f);
+   list_remove (f);
 }
 

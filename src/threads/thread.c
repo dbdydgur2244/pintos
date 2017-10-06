@@ -213,7 +213,6 @@ thread_create (const char *name, int priority,
   /* YH added */
     list_init ( &(t->child_list) );
     sema_init ( &(t->sema), (unsigned)1 );
-    file_init(  )
     return tid;
 }
 

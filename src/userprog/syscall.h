@@ -11,7 +11,7 @@ void syscall_exit (int status);
 pid_t syscall_exec (const char *cmd_line);
 
 /* yonghyuk */
-struct file_list * find_file_by_fd(int fd);
+struct file * find_file_by_fd(int fd);
 int syscall_wait (pid_t pid);
 bool syscall_create (const char *file, unsigned initial_size);
 bool syscall_remove (const char *file);
