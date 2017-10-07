@@ -24,7 +24,7 @@ syscall_init (void)
 void
 syscall_get_args(void *esp, void *args[], int syscallnum){
     if ( syscallnum != SYS_HALT )
-        args[0] = (int *)esp + 1;
+        args[0] = (int *)esp - 1;
     switch(syscallnum){
         /* project #1 */
         case SYS_HALT:
@@ -36,7 +36,7 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
         case SYS_WAIT:
             break;
         case SYS_CREATE:
-            args[1] = (int *)esp + 2;
+            args[1] = (int *)esp - 2;
             break;
         case SYS_REMOVE:
             break;
@@ -45,15 +45,15 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
         case SYS_FILESIZE:
             break;
         case SYS_READ:
-            args[1] = (int *)esp + 2;
-            args[2] = (int *)esp + 3;
+            args[1] = (int *)esp - 2;
+            args[2] = (int *)esp - 3;
             break;
         case SYS_WRITE:
-            args[1] = (int *)esp + 2;
-            args[2] = (int *)esp + 3;
+            args[1] = (int *)esp - 2;
+            args[2] = (int *)esp - 3;
             break;
         case SYS_SEEK:
-            args[1] = (int *)esp + 2;
+            args[1] = (int *)esp - 2;
             break;
         case SYS_TELL:
             break;
@@ -61,7 +61,7 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
             break;
             /* Project 3 and optionally project 4. */
         case SYS_MMAP:
-            args[1] = (int *)esp + 2;
+            args[1] = (int *)esp - 2;
             break;
         case SYS_MUNMAP:
             break;
@@ -85,7 +85,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
     int syscallnum;
     void *args[4];
-    printf ("system call!\n");
     syscallnum = *((int *)(f->esp));
     syscall_get_args(f->esp, args, syscallnum);
     switch(syscallnum){

@@ -56,23 +56,17 @@ void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
 
 }
 /*parsing arguments, new function*/
-int parse_filename(char*filename,char*args[arg_limit]){
-    char *temp;
+int parse_filename(char * temp,char * args[arg_limit]){
     char *now;
     char *next;
     int argnum=0;
     
-    temp=(char*)malloc(sizeof(char)*(strlen(filename)+1));
-    strlcpy(temp,filename,strlen(filename)+1);
-
-    now=strtok_r(temp,"  ",&next);
+    now=strtok_r(temp," ",&next);
     while(now!=NULL){
-        args[argnum-1]=now;
+        args[argnum]=now;
         argnum++;
-
-        now=strtok_r(NULL,"  ",&next);
+        now=strtok_r(NULL," ",&next);
     }
-    free(temp);
     return argnum;
 }
 /* Starts a new thread running a user program loaded from
@@ -91,11 +85,11 @@ process_execute (const char *file_name)
     if (fn_copy == NULL)
         return TID_ERROR;
     strlcpy (fn_copy, file_name, PGSIZE);
-
     /* Create a new thread to execute FILE_NAME. */
     tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
     if (tid == TID_ERROR)
-        palloc_free_page (fn_copy); 
+        palloc_free_page (fn_copy);
+    //puts("before return tid");
     return tid;
 }
 
@@ -143,10 +137,12 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+    while(true){
+    
+    }
     struct thread *child_t = NULL;
     struct list_elem *e;
     struct list child_list = thread_current()->child_list;
-    while(1);
     for  (e = list_begin (&child_list); e != list_end (&child_list);
             e = list_next(e))
     {
@@ -289,17 +285,19 @@ load (const char *file_name, void (**eip) (void), void **esp)
   int i;
   int argnum;//number of arguments-for constructing esp
   char *args[arg_limit];//storing arguments-for constructing esp
+  char *temp;
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
+  temp=(char*)malloc(sizeof(char)*(strlen(file_name)+1));
+  strlcpy(temp,file_name,strlen(file_name)+1);
 
-  argnum = parse_filename(file_name,args);//parsing-Argument Passing
-
+  argnum = parse_filename(temp,args);//parsing-Argument Passing
   /* Open executable file. */
-  file = filesys_open (file_name);
+  file = filesys_open (args[0]);
   if (file == NULL) 
     {
         printf ("load: %s: open failed\n", file_name);
@@ -377,7 +375,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
                 break;
         }
     }
-
     /* Set up stack. */
     if (!setup_stack (esp))
         goto done;
@@ -386,9 +383,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     *eip = (void (*) (void)) ehdr.e_entry;
 
     construct_ESP(esp,argnum,args);
-
-    hex_dump(*esp,*esp,30,true);
-
+    hex_dump(*esp,*esp,(uint32_t)PHYS_BASE - (uint32_t) *esp,true);
     success = true;
 
 done:

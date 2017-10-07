@@ -110,10 +110,8 @@ thread_start (void)
   struct semaphore start_idle;
   sema_init (&start_idle, 0);
   thread_create ("idle", PRI_MIN, idle, &start_idle);
-
   /* Start preemptive thread scheduling. */
   intr_enable ();
-
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&start_idle);
 }
@@ -209,10 +207,6 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
-  /* YH added */
-    list_init ( &(t->child_list) );
-    sema_init ( &(t->sema), (unsigned)1 );
     return tid;
 }
 
