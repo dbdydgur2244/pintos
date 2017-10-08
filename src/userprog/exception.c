@@ -163,7 +163,7 @@ page_fault (struct intr_frame *f)
   kill (f);
 }
 
-bool
+static bool
 is_page_fault(void *vaddr){
     if ( is_user_vaddr (vaddr) && vaddr >= 0x08048000 )
         return false;

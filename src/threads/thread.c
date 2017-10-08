@@ -468,6 +468,13 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+
+    /* YH added */
+    list_init(&t->child_list); /* List init for child_list */
+    /* file array initialize */
+    for ( int i = 0; i < MAX_FILE_NUM; ++i ){
+        t->file[i] = NULL;
+    }
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

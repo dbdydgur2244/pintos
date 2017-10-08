@@ -11,7 +11,6 @@ void exit (int status);
 pid_t exec (const char *cmd_line);
 
 /* yonghyuk */
-struct file * find_file_by_fd(int fd);
 int wait (pid_t pid);
 bool create (const char *file, unsigned initial_size);
 bool remove (const char *file);

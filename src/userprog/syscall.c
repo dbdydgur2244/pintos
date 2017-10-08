@@ -77,6 +77,10 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
         default:
             break;
     }
+    for ( int i = 0; i < 4; ++i ){
+        if ( args[i] != NULL )
+            is_page_fault((void *)*args);
+    }
 }
 
 /* YH updated..... */
@@ -84,43 +88,50 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
     int syscallnum;
-    void *args[4];
+    void *args[4] = { NULL, NULL, NULL, NULL };
     syscallnum = *((int *)(f->esp));
     syscall_get_args(f->esp, args, syscallnum);
     switch(syscallnum){
         /* jimin */
         case SYS_HALT:
-            halt();
+            halt ();
             break;
         case SYS_EXIT:
-            exit((int)*(int *)args[0]);
+            exit ((int)*(int *)args[0]);
             break;
         case SYS_EXEC:
-            exec((char *)*(int *)args[0]);
+            f->eax = exec ((char *)*(int *)args[0]);
             break;
         case SYS_CREATE:
+            f->eax = create ((char *)*(int *)args[0], (unsigned)*(int *)args[1]);
             break;
         case SYS_REMOVE:
+            f->eax = remove ((char *)*(int *)args[0]);
             break;
         case SYS_OPEN:
+            f->eax = open ((char *)*(int *)args[0]);
             break;
         case SYS_FILESIZE:
+            f->eax = open ((char *)*(int *)args[0]);
             break;
             /* yonghyuk */
         case SYS_WAIT:
-            wait((int)*(int *)args[0]);
+            f->eax = wait((int)*(int *)args[0]);
             break;
         case SYS_READ:
-            read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
+            f->eax = read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
             break;
         case SYS_WRITE:
-            write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
+            f->eax = write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
             break;
         case SYS_SEEK:
+            seek((int)*(int *)args[0], (unsigned)*(int *)args[1]);
             break;
         case SYS_TELL:
+            f->eax = tell((int)*(int *)args[0]);
             break;
         case SYS_CLOSE:
+            close((int)*(int *)args[0]);
             break;
             /* Project 3 and optionally project 4. */
         case SYS_MMAP:
@@ -156,6 +167,15 @@ halt (void){
 void
 exit (int status){
 
+    /* YH added
+     * This is for close all opened files */
+    struct thread *t = thread_current();
+    for ( int i = 0; i < MAX_FILE_NUM; ++i ) {
+        if ( t->file[i] != NULL )
+            close(i);
+    }
+    t->exit_status = status;
+    return status;
 }
 
 /* Run tehe executable whose name is givenen in cmd_line, passing any given
@@ -170,26 +190,6 @@ exec (const char *cmd_line){
 /*----------------------------------------------------- */
 /* yonghyuk */
 
-/* Find file by fd(file descripter) */
-struct file *
-find_file_by_fd(int fd){
-    struct thread *t;
-    struct list list;
-    struct list_elem *e;
-
-    t = thread_current();
-    list = t->file_list;
-    for ( e = list_begin(&list); e != list_end(&list); e != list_next(&list)){
-        /*
-        struct file_elem fe = list_entry(e, struct file_elem, file_elem);
-        if ( fe.fd == fd ){
-            return fe.f;
-        }
-        */
-    }
-    return NULL;
-}
-
 
 
 /* Waits for a child process pid and retrieves the child's exit status.
@@ -198,7 +198,7 @@ find_file_by_fd(int fd){
  * process exits*/
 int
 wait (pid_t pid){
-   process_wait (pid); 
+   return process_wait (pid); 
 }
 
 /* Creates a new file called file initially initial_size bytes in size.
@@ -223,14 +223,23 @@ remove (const char *file){
 int
 open (const char *file){
     struct file *f;
+    struct thread *t = thread_current();
+    int fd = -1; /* if cannot open file or invalid file, then return -1*/ 
     f = filesys_open (file);
+    for ( int i = 2; i < MAX_FILE_NUM; ++i ){
+        if ( t->file[i] == NULL){
+            &(t->file[i]) = f; fd = i;
+            break;
+        }
+    }
+    return fd;
 }
 
 
 /* Returns the size, in bytes, of the file open as fd. */
 int
 filesize (int fd){
-    struct file *f = find_file_by_fd (fd);
+    struct file *f = &(thread_current()->file[fd]);
     if ( f == NULL )
         return -1;
     return (int)file_length (f);
@@ -250,10 +259,11 @@ read (int fd, void *buffer, unsigned size){
             buf[i] = input_getc();
         return size;
     }
-    else if ( fd < 0 || fd == 1) { }
+    else if ( fd < 0 || fd == 1) { } /* error */
     else {
-         struct file *f = find_file_by_fd(fd);
-         if ( f == NULL ) return -1;
+         struct file *f = &(thread_current()->file[fd]);
+         if ( f == NULL || is_page_fault (buffer) )
+             return -1;
          int readed_bytes = (int)file_read(f, buffer, (int)size);
          return readed_bytes;
     }
@@ -272,10 +282,10 @@ write (int fd, const void *buffer, unsigned size){
         putbuf(buffer, size);
         return size;
     }
-    else if ( fd <= 0 ) {}
+    else if ( fd <= 0 ) {} /* error */
     else {
-        struct file *f = find_file_by_fd (fd);
-        if ( f == NULL )
+        struct file *f = &(thread_current()->file[fd]);
+        if ( f == NULL || is_page_fault (buffer) )
             return -1;
         int bytes_written = (int)file_write (f, buffer, size);
         file_deny_write (f);
@@ -286,21 +296,31 @@ write (int fd, const void *buffer, unsigned size){
 
 void
 seek (int fd, unsigned positioin){
-    struct file *f = find_file_by_fd (fd);
+    struct file *f = &(thread_current()->file[fd]);
+    if ( f == NULL ) {
+        exit(-1);
+    }
     file_seek (f, (int)positioin );
 }
 
 unsigned
 tell ( int fd ){
-    struct file *f = find_file_by_fd (fd);
+    struct file *f = &(thread_current()->file[fd]);
+    if ( f == NULL ) {
+        exit(-1);
+    }
     return (unsigned) file_tell (f);
 }
 
 /* not finished */
 void
 close ( int fd ){
-   struct file *f = find_file_by_fd (fd);
-   file_close (f);
-   list_remove (f);
+    struct file *f = &(thread_current()->file[fd]);
+    if ( f == NULL ) {
+        exit (-1);
+    }
+    file_close (f);
+    *f = NULL;
+   //list_remove (f);
 }
 
