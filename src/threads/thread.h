@@ -4,7 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include "../filesys/file.h"
+#include "../filesys/file.c"
 #include "synch.h"
 
 /* States in a thread's life cycle. */

@@ -175,7 +175,8 @@ exit (int status){
             close(i);
     }
     t->exit_status = status;
-    return status;
+    printf("%s: exit(%d)\n",t->name,status);
+    thread_exit();
 }
 
 /* Run tehe executable whose name is givenen in cmd_line, passing any given
@@ -183,7 +184,15 @@ exit (int status){
  * Must return pid -1. */
 pid_t
 exec (const char *cmd_line){
+    pid_t tid=process_execute(cmd_line); 
+    if(tid == TID_ERROR) return tid;
+    /*do i have something to do..?*/
+    /*struct lock file_exe;
+     *lock_acquire(&file_exe);
+     *tid=process_execute(cmd_line);
+     *lock_release(&file_exe);*/
 
+    return tid;
 }
 
 
