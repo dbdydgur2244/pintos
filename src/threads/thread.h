@@ -4,7 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include "../filesys/file.c"
+#include "filesys/file.h"
 #include "synch.h"
 
 /* States in a thread's life cycle. */
@@ -25,7 +25,7 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
-#define MAX_FILE_NUM 128                /* Maximum file number */
+#define MAX_FILE_NUM 130                /* Maximum file number */
 
 /* A kernel thread or user process.
 
@@ -102,7 +102,7 @@ struct thread
     struct list child_list;             /* List for child process. */
     struct list_elem child_elem;        /* List element for child process. */
     struct semaphore sema;              /* semaphore for thread syncronize */
-    struct file file[MAX_FILE_NUM];     /* Array for file. */
+    struct file *file[MAX_FILE_NUM];     /* Array for file. */
     
     int exit_status;
     /* ------------------------------------------- */

@@ -9,6 +9,7 @@
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
 #include "userprog/tss.h"
+#include "userprog/syscall.h"
 #include "filesys/directory.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
@@ -112,6 +113,12 @@ start_process (void *file_name_)
     palloc_free_page (file_name);
     if (!success) 
         thread_exit ();
+
+    /* YH added */
+    int fd;
+    fd = open(file_name_);
+    file_deny_write ( thread_current()->file[fd] ); 
+
 
     /* Start the user process by simulating a return from an
        interrupt, implemented by intr_exit (in
@@ -381,8 +388,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
     /* Start address. */
     *eip = (void (*) (void)) ehdr.e_entry;
 
-    construct_ESP(esp,argnum,args);
-    hex_dump(*esp,*esp,(uint32_t)PHYS_BASE - (uint32_t) *esp,true);
+    construct_ESP (esp, argnum, args);
+    hex_dump (*esp, *esp, (uint32_t)PHYS_BASE - (uint32_t) *esp, true);
     success = true;
 
 done:

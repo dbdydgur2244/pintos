@@ -25,7 +25,7 @@ void
 syscall_get_args(void *esp, void *args[], int syscallnum){
     if ( syscallnum != SYS_HALT )
         args[0] = (int *)esp - 1;
-    switch(syscallnum){
+    switch (syscallnum) {
         /* project #1 */
         case SYS_HALT:
             break;
@@ -77,7 +77,8 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
         default:
             break;
     }
-    for ( int i = 0; i < 4; ++i ){
+    int i;
+    for ( i = 0; i < 4; ++i ){
         if ( args[i] != NULL )
             is_page_fault((void *)*args);
     }
@@ -170,7 +171,8 @@ exit (int status){
     /* YH added
      * This is for close all opened files */
     struct thread *t = thread_current();
-    for ( int i = 0; i < MAX_FILE_NUM; ++i ) {
+    int i;
+    for ( i = 0; i < MAX_FILE_NUM; ++i ) {
         if ( t->file[i] != NULL )
             close(i);
     }
@@ -191,15 +193,12 @@ exec (const char *cmd_line){
      *lock_acquire(&file_exe);
      *tid=process_execute(cmd_line);
      *lock_release(&file_exe);*/
-
     return tid;
 }
 
 
 /*----------------------------------------------------- */
 /* yonghyuk */
-
-
 
 /* Waits for a child process pid and retrieves the child's exit status.
  * If pid did call exit(), but was terminated, wait(pid) return -1.
@@ -224,7 +223,7 @@ remove (const char *file){
     return filesys_remove (file);
 }
 
-/*Opens the file called file.
+/* Opens the file called file.
  * Returns a nonnegative integer handle called a "file descriptor",
  * or -1 if the file could not be opened.
  * Fd 0 and 1 are reserved for the console. fd are not inherited by child process.
@@ -233,11 +232,11 @@ int
 open (const char *file){
     struct file *f;
     struct thread *t = thread_current();
-    int fd = -1; /* if cannot open file or invalid file, then return -1*/ 
+    int fd = -1, i; /* if cannot open file or invalid file, then return -1*/ 
     f = filesys_open (file);
-    for ( int i = 2; i < MAX_FILE_NUM; ++i ){
+    for ( i = 2; i < MAX_FILE_NUM; ++i ){
         if ( t->file[i] == NULL){
-            &(t->file[i]) = f; fd = i;
+            t->file[i] = f; fd = i;
             break;
         }
     }
@@ -248,7 +247,7 @@ open (const char *file){
 /* Returns the size, in bytes, of the file open as fd. */
 int
 filesize (int fd){
-    struct file *f = &(thread_current()->file[fd]);
+    struct file *f = thread_current()->file[fd];
     if ( f == NULL )
         return -1;
     return (int)file_length (f);
@@ -262,7 +261,7 @@ filesize (int fd){
 int
 read (int fd, void *buffer, unsigned size){
     char *buf = (char *)buffer;
-    int i;
+    unsigned i;
     if ( fd == READ_FROM_KEYBORAD ){
         for ( i = 0; i < size; ++i )
             buf[i] = input_getc();
@@ -270,7 +269,7 @@ read (int fd, void *buffer, unsigned size){
     }
     else if ( fd < 0 || fd == 1) { } /* error */
     else {
-         struct file *f = &(thread_current()->file[fd]);
+         struct file *f = thread_current()->file[fd];
          if ( f == NULL || is_page_fault (buffer) )
              return -1;
          int readed_bytes = (int)file_read(f, buffer, (int)size);
@@ -293,7 +292,7 @@ write (int fd, const void *buffer, unsigned size){
     }
     else if ( fd <= 0 ) {} /* error */
     else {
-        struct file *f = &(thread_current()->file[fd]);
+        struct file *f = thread_current()->file[fd];
         if ( f == NULL || is_page_fault (buffer) )
             return -1;
         int bytes_written = (int)file_write (f, buffer, size);
@@ -305,7 +304,7 @@ write (int fd, const void *buffer, unsigned size){
 
 void
 seek (int fd, unsigned positioin){
-    struct file *f = &(thread_current()->file[fd]);
+    struct file *f = thread_current()->file[fd];
     if ( f == NULL ) {
         exit(-1);
     }
@@ -314,7 +313,7 @@ seek (int fd, unsigned positioin){
 
 unsigned
 tell ( int fd ){
-    struct file *f = &(thread_current()->file[fd]);
+    struct file *f = thread_current()->file[fd];
     if ( f == NULL ) {
         exit(-1);
     }
@@ -324,12 +323,12 @@ tell ( int fd ){
 /* not finished */
 void
 close ( int fd ){
-    struct file *f = &(thread_current()->file[fd]);
+    struct file *f = thread_current()->file[fd];
     if ( f == NULL ) {
         exit (-1);
     }
     file_close (f);
-    *f = NULL;
-   //list_remove (f);
+    thread_current()->file[fd] = NULL;
+    //list_remove (f);
 }
 

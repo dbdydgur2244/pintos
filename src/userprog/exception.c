@@ -1,16 +1,16 @@
 #include "userprog/exception.h"
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "userprog/gdt.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-
+#include "threads/vaddr.h"
 /* Number of page faults processed. */
 static long long page_fault_cnt;
 
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
-static bool is_page_fault(void *);
 /* Registers handlers for interrupts that can be caused by user
    programs.
 
@@ -148,9 +148,9 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
   
-  if(user!=0){/*page fault in the kernel merely sets this*/
-      f->eip=f->eax;
-      f->eax=0xffffffff;
+  if(user != 0){/*page fault in the kernel merely sets this*/
+      f->eip = f->eax;
+      f->eax = 0xffffffff;
   }
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
@@ -163,10 +163,10 @@ page_fault (struct intr_frame *f)
   kill (f);
 }
 
-static bool
-is_page_fault(void *vaddr){
-    if ( is_user_vaddr (vaddr) && vaddr >= 0x08048000 )
-        return false;
-    return true;
+int
+is_page_fault (void *vaddr){
+    if ( is_user_vaddr (vaddr) && vaddr >= (void *)0x08048000 )
+        return (int)false;
+    return (int)true;
 }
 
