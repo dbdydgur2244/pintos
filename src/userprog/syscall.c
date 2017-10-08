@@ -90,13 +90,13 @@ syscall_handler (struct intr_frame *f UNUSED)
     switch(syscallnum){
         /* jimin */
         case SYS_HALT:
-            syscall_halt();
+            halt();
             break;
         case SYS_EXIT:
-            syscall_exit((int)*(int *)args[0]);
+            exit((int)*(int *)args[0]);
             break;
         case SYS_EXEC:
-            syscall_exec((char *)*(int *)args[0]);
+            exec((char *)*(int *)args[0]);
             break;
         case SYS_CREATE:
             break;
@@ -108,13 +108,13 @@ syscall_handler (struct intr_frame *f UNUSED)
             break;
             /* yonghyuk */
         case SYS_WAIT:
-            syscall_wait((int)*(int *)args[0]);
+            wait((int)*(int *)args[0]);
             break;
         case SYS_READ:
-            syscall_read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
+            read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
             break;
         case SYS_WRITE:
-            syscall_write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
+            write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
             break;
         case SYS_SEEK:
             break;
@@ -146,7 +146,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 /* Terminates Pintos. */
 void
-syscall_halt (void){
+halt (void){
     shutdown_power_off();
 }
 
@@ -154,7 +154,7 @@ syscall_halt (void){
  * If the process's parent waits for it, this status value will be returned.
  * a status of 0 indicates sucess and nonzero values indicate errors. */
 void
-syscall_exit (int status){
+exit (int status){
 
 }
 
@@ -162,7 +162,7 @@ syscall_exit (int status){
  * arguments and returns the new process's program id(pid).
  * Must return pid -1. */
 pid_t
-syscall_exec (const char *cmd_line){
+exec (const char *cmd_line){
 
 }
 
@@ -197,21 +197,21 @@ find_file_by_fd(int fd){
  * It must be ensured that Pintos does not terminate until the initial
  * process exits*/
 int
-syscall_wait (pid_t pid){
+wait (pid_t pid){
    process_wait (pid); 
 }
 
 /* Creates a new file called file initially initial_size bytes in size.
  * Return true if sucessful, false otherwise. */
 bool
-syscall_create (const char *file, unsigned initial_size){
+create (const char *file, unsigned initial_size){
     return filesys_create (file, (int)initial_size);
 }
 
 /* Deletes the file called file.
  * Returns true if successful, false otherwise. */
 bool
-syscall_remove (const char *file){
+remove (const char *file){
     return filesys_remove (file);
 }
 
@@ -221,7 +221,7 @@ syscall_remove (const char *file){
  * Fd 0 and 1 are reserved for the console. fd are not inherited by child process.
  * Each process has an independent set of file descriptors. */
 int
-syscall_open (const char *file){
+open (const char *file){
     struct file *f;
     f = filesys_open (file);
 }
@@ -229,7 +229,7 @@ syscall_open (const char *file){
 
 /* Returns the size, in bytes, of the file open as fd. */
 int
-syscall_filesize (int fd){
+filesize (int fd){
     struct file *f = find_file_by_fd (fd);
     if ( f == NULL )
         return -1;
@@ -242,7 +242,7 @@ syscall_filesize (int fd){
  * Actually, we use only fd is 0. */
 #define READ_FROM_KEYBORAD 0
 int
-syscall_read (int fd, void *buffer, unsigned size){
+read (int fd, void *buffer, unsigned size){
     char *buf = (char *)buffer;
     int i;
     if ( fd == READ_FROM_KEYBORAD ){
@@ -267,7 +267,7 @@ syscall_read (int fd, void *buffer, unsigned size){
  * Actually, we use only fd is 1. */
 #define WRITE_TO_CONSOLE 1
 int
-syscall_write (int fd, const void *buffer, unsigned size){
+write (int fd, const void *buffer, unsigned size){
     if ( fd == WRITE_TO_CONSOLE ) {
         putbuf(buffer, size);
         return size;
@@ -285,19 +285,20 @@ syscall_write (int fd, const void *buffer, unsigned size){
 }
 
 void
-syscall_seek (int fd, unsigned positioin){
+seek (int fd, unsigned positioin){
     struct file *f = find_file_by_fd (fd);
     file_seek (f, (int)positioin );
 }
 
 unsigned
-syscall_tell ( int fd ){
+tell ( int fd ){
     struct file *f = find_file_by_fd (fd);
     return (unsigned) file_tell (f);
 }
 
 /* not finished */
-void syscall_close ( int fd ){
+void
+close ( int fd ){
    struct file *f = find_file_by_fd (fd);
    file_close (f);
    list_remove (f);

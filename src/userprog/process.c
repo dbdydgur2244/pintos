@@ -26,32 +26,31 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
     int i;
     char **arg_addr;
-    int first=(int)*esp;
+    int first = (int) *esp;
 
-    arg_addr=(char**)malloc(sizeof(char*)*argnum);
-    for(i=argnum-1;i>=0;i--){
-        (*esp)-=(strlen(args[i])+1);
-        memcpy(*esp,args[i],strlen(args[i])+1);
-        arg_addr[i]=(char*)(*esp);
+    arg_addr = (char **) malloc ( sizeof (char *) * argnum);
+    for ( i = argnum - 1; i >= 0; i-- ) {
+        (*esp) -= ( strlen (args[i]) + 1 );
+        memcpy (*esp, args[i], strlen ( args[i] ) + 1);
+        arg_addr[i] = (char *)(*esp);
     }
-    if((first-(int)(*esp))%4!=0){
+    if ( (first - (int) (*esp)) % 4 != 0){
         int j;
-        for(j=0;j<4-(first-(int)*esp)%4;j++) {
-            (*esp)-=1;
-            memset(*esp,0,1);
+        for( j = 0; j < 4 - (first - (int) * esp) % 4;j++) {
+            (*esp) -= 1;
+            memset (*esp, 0, 1);
         }
     }
-    for(i=argnum-1;i>=0;i--){
-        (*esp)-=4;
-        *((char**)*esp)=arg_addr[i];
+    for(i = argnum - 1; i >= 0; i--){
+        (*esp) -= 4;
+        *( (char**) *esp) = arg_addr[i];
     }
-    *esp-=4;
-    *((char**)*esp)=(*esp)+4;
-    *esp-=4;
-    *((int*)*esp)=argnum;
-    *esp-=4;
-    *((int*)*esp)=0;
-
+    *esp -= 4;
+    *( (char**)*esp) = (*esp) + 4;
+    *esp -= 4;
+    *( (int*)*esp ) = argnum;
+    *esp -= 4;
+    *( (int*)*esp ) = 0;
 
 
 }
@@ -61,11 +60,11 @@ int parse_filename(char * temp,char * args[arg_limit]){
     char *next;
     int argnum=0;
     
-    now=strtok_r(temp," ",&next);
-    while(now!=NULL){
-        args[argnum]=now;
+    now = strtok_r (temp," ",&next);
+    while(now != NULL){
+        args[argnum] = now;
         argnum++;
-        now=strtok_r(NULL," ",&next);
+        now = strtok_r (NULL," ",&next);
     }
     return argnum;
 }
