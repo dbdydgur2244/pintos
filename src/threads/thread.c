@@ -183,6 +183,9 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+    /* YH added */
+    t->parent = thread_current();
+
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
      member cannot be observed. */
@@ -470,9 +473,8 @@ init_thread (struct thread *t, const char *name, int priority)
   list_push_back (&all_list, &t->allelem);
 
     /* YH added */
-    t->parent = thread_current();
-    
-    list_push_back (&t->parent->child_list, &t->child_elem);
+    t->parent = NULL;
+    t->wait_status = false;    
     list_init (&t->child_list); /* List init for child_list */
     sema_init (&t->sema, 0); 
     /* file array initialize */

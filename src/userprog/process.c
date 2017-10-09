@@ -89,7 +89,7 @@ process_execute (const char *file_name)
     tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
     if (tid == TID_ERROR)
         palloc_free_page (fn_copy);
-    //puts("before return tid");
+    
     return tid;
 }
 
@@ -111,15 +111,13 @@ start_process (void *file_name_)
 
     /* If load failed, quit. */
     palloc_free_page (file_name);
-    if (!success) 
-        thread_exit ();
-
+    
     /* YH added */
-    int fd;
-    fd = open(file_name_);
-    file_deny_write ( thread_current()->file[fd] ); 
-
-
+    if (!success) { 
+        thread_current()->exit_status = -1;
+        sema_up(&thread_current()->parent->sema);
+        thread_exit ();
+    }
     /* Start the user process by simulating a return from an
        interrupt, implemented by intr_exit (in
        threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -143,12 +141,10 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-    while(true){
-    
-    }
-    struct thread *child_t = NULL;
+    struct thread *child_t = NULL, *parent = NULL;
     struct list_elem *e;
     struct list child_list = thread_current()->child_list;
+
     for  (e = list_begin (&child_list); e != list_end (&child_list);
             e = list_next(e))
     {
@@ -161,7 +157,12 @@ process_wait (tid_t child_tid UNUSED)
     
     if ( child_t == NULL || !(child_t->wait_status) )
         return -1;
-    return -1;
+
+    parent = thread_current()->parent;
+    child_t->wait_status = true;
+    sema_up(&child_t->sema);
+    sema_down(&parent->sema);
+    return child_t->exit_status;
 }
 
 /* Free the current process's resources. */

@@ -30,38 +30,50 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
         case SYS_HALT:
             break;
         case SYS_EXIT:
+        args[0] = (int *)esp - 1;
             break;
         case SYS_EXEC:
+        args[0] = (int *)esp - 1;
             break;
         case SYS_WAIT:
+            args[0] = (int *)esp - 1;
             break;
         case SYS_CREATE:
-            args[1] = (int *)esp - 2;
+            args[0] = (int *)esp - 2;
+            args[1] = (int *)esp - 1;
             break;
         case SYS_REMOVE:
+            args[0] = (int *)esp - 1;
             break;
         case SYS_OPEN:
+            args[0] = (int *)esp - 1;
             break;
         case SYS_FILESIZE:
+            args[0] = (int *)esp - 1;
             break;
         case SYS_READ:
+
+            args[0] = (int *)esp - 3;
             args[1] = (int *)esp - 2;
-            args[2] = (int *)esp - 3;
+            args[2] = (int *)esp - 1;
             break;
         case SYS_WRITE:
+            args[0] = (int *)esp - 3;
             args[1] = (int *)esp - 2;
-            args[2] = (int *)esp - 3;
+            args[2] = (int *)esp - 1;
             break;
         case SYS_SEEK:
-            args[1] = (int *)esp - 2;
+            args[0] = (int *)esp - 2;
+            args[1] = (int *)esp - 1;
             break;
         case SYS_TELL:
+            args[0] = (int *)esp - 1;
             break;
         case SYS_CLOSE:
+        args[0] = (int *)esp - 1;
             break;
             /* Project 3 and optionally project 4. */
         case SYS_MMAP:
-            args[1] = (int *)esp - 2;
             break;
         case SYS_MUNMAP:
             break;
