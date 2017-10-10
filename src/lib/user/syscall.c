@@ -61,6 +61,23 @@
           retval;                                               \
         })
 
+#define syscall4(NUMBER, ARG0, ARG1, ARG2, ARG3)                \
+        ({                                                      \
+          int retval;                                           \
+          asm volatile                                          \
+            ("pushl %[arg3]; pushl %[arg2]; pushl %[arg1]; "    \
+             "pushl %[arg0]; pushl %[number]; "                 \
+             "int $0x30; addl $20, %%esp"                       \
+               : "=a" (retval)                                  \
+               : [number] "i" (NUMBER),                         \
+                 [arg0] "g" (ARG0),                             \
+                 [arg1] "g" (ARG1),                             \
+                 [arg2] "g" (ARG2),                             \
+                 [arg3] "g" (ARG3)                              \
+               : "memory");                                     \
+          retval;                                               \
+        })
+
 void
 halt (void) 
 {
@@ -139,6 +156,17 @@ void
 close (int fd)
 {
   syscall1 (SYS_CLOSE, fd);
+}
+
+int
+pibonacci (int n)
+{
+    syscall1 (SYS_PIBO, n);
+}
+
+int
+sum_of_four_integers (int a, int b, int c, int d) {
+    syscall4 (SYS_SUM, a, b, c, d);
 }
 
 mapid_t

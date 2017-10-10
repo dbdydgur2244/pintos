@@ -474,9 +474,9 @@ init_thread (struct thread *t, const char *name, int priority)
 
     /* YH added */
     t->parent = NULL;
-    t->wait_status = false;    
     list_init (&t->child_list); /* List init for child_list */
-    sema_init (&t->sema, 0); 
+    sema_init (&t->wait, 0);
+    sema_init (&t->load, 0); 
     /* file array initialize */
     int i;
     for ( i = 0; i < MAX_FILE_NUM; ++i ){
@@ -593,6 +593,21 @@ allocate_tid (void)
   lock_release (&tid_lock);
 
   return tid;
+}
+
+struct thread *
+find_child_by_tid(struct thread *cur,tid_t tid){
+    struct thread *t = NULL;
+    struct list_elem *e;
+    for ( e = list_begin(&cur->child_list); e != list_end(&cur->child_list);
+            e = list_next(e) )
+    {
+        t = list_entry (e, struct thread, child_elem );
+        if ( t->tid == tid ) {
+            return t;
+        }
+    }
+    return NULL;
 }
 
 /* Offset of `stack' member within `struct thread'.

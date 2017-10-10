@@ -35,6 +35,7 @@ void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
         memcpy (*esp, args[i], strlen ( args[i] ) + 1);
         arg_addr[i] = (char *)(*esp);
     }
+
     if ( (first - (int) (*esp)) % 4 != 0){
         int j;
         for( j = 0; j < 4 - (first - (int) * esp) % 4;j++) {
@@ -42,10 +43,15 @@ void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
             memset (*esp, 0, 1);
         }
     }
+
+    *esp -= 4;
+    *( (char **)*esp) = 0;
+
     for(i = argnum - 1; i >= 0; i--){
         (*esp) -= 4;
         *( (char**) *esp) = arg_addr[i];
     }
+
     *esp -= 4;
     *( (char**)*esp) = (*esp) + 4;
     *esp -= 4;
@@ -53,8 +59,8 @@ void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
     *esp -= 4;
     *( (int*)*esp ) = 0;
 
-
 }
+
 /*parsing arguments, new function*/
 int parse_filename(char * temp,char * args[arg_limit]){
     char *now;
@@ -69,6 +75,7 @@ int parse_filename(char * temp,char * args[arg_limit]){
     }
     return argnum;
 }
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -107,6 +114,8 @@ start_process (void *file_name_)
     if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
     if_.cs = SEL_UCSEG;
     if_.eflags = FLAG_IF | FLAG_MBS;
+    
+
     success = load (file_name, &if_.eip, &if_.esp);
 
     /* If load failed, quit. */
@@ -115,7 +124,6 @@ start_process (void *file_name_)
     /* YH added */
     if (!success) { 
         thread_current()->exit_status = -1;
-        sema_up(&thread_current()->parent->sema);
         thread_exit ();
     }
     /* Start the user process by simulating a return from an
@@ -141,28 +149,13 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-    struct thread *child_t = NULL, *parent = NULL;
+    struct thread *child_t = find_child_by_tid (thread_current(), child_t);
     struct list_elem *e;
-    struct list child_list = thread_current()->child_list;
-
-    for  (e = list_begin (&child_list); e != list_end (&child_list);
-            e = list_next(e))
-    {
-        struct thread *t= list_entry (e, struct thread, child_elem);
-        if ( t->tid == child_tid ){
-            child_t = t;
-            break;
-        }
-    }
+    int exit_status = -1;
+    if ( child_t != NULL){
     
-    if ( child_t == NULL || !(child_t->wait_status) )
-        return -1;
-
-    parent = thread_current()->parent;
-    child_t->wait_status = true;
-    sema_up(&child_t->sema);
-    sema_down(&parent->sema);
-    return child_t->exit_status;
+    }
+    return exit_status;
 }
 
 /* Free the current process's resources. */
@@ -188,8 +181,6 @@ process_exit (void)
         pagedir_activate (NULL);
         pagedir_destroy (pd);
     }
-    //exit(cur->status);
-    //print("%s: exit(%d)\n",cur->name,cur->status);
 }
 
 /* Sets up the CPU for running user code in the current

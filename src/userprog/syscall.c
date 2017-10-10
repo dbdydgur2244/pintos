@@ -24,53 +24,40 @@ syscall_init (void)
 void
 syscall_get_args(void *esp, void *args[], int syscallnum){
     if ( syscallnum != SYS_HALT )
-        args[0] = (int *)esp - 1;
+        args[0] = (int *)esp + 1;
     switch (syscallnum) {
         /* project #1 */
         case SYS_HALT:
             break;
         case SYS_EXIT:
-        args[0] = (int *)esp - 1;
             break;
         case SYS_EXEC:
-        args[0] = (int *)esp - 1;
             break;
         case SYS_WAIT:
-            args[0] = (int *)esp - 1;
             break;
         case SYS_CREATE:
-            args[0] = (int *)esp - 2;
-            args[1] = (int *)esp - 1;
+            args[1] = (int *)esp + 2;
             break;
         case SYS_REMOVE:
-            args[0] = (int *)esp - 1;
             break;
         case SYS_OPEN:
-            args[0] = (int *)esp - 1;
             break;
         case SYS_FILESIZE:
-            args[0] = (int *)esp - 1;
             break;
         case SYS_READ:
-
-            args[0] = (int *)esp - 3;
-            args[1] = (int *)esp - 2;
-            args[2] = (int *)esp - 1;
+            args[1] = (int *)esp + 2;
+            args[2] = (int *)esp + 3;
             break;
         case SYS_WRITE:
-            args[0] = (int *)esp - 3;
-            args[1] = (int *)esp - 2;
-            args[2] = (int *)esp - 1;
+            args[1] = (int *)esp + 2;
+            args[2] = (int *)esp + 3;
             break;
         case SYS_SEEK:
-            args[0] = (int *)esp - 2;
-            args[1] = (int *)esp - 1;
+            args[1] = (int *)esp + 2;
             break;
         case SYS_TELL:
-            args[0] = (int *)esp - 1;
             break;
         case SYS_CLOSE:
-        args[0] = (int *)esp - 1;
             break;
             /* Project 3 and optionally project 4. */
         case SYS_MMAP:
@@ -125,26 +112,32 @@ syscall_handler (struct intr_frame *f UNUSED)
             f->eax = open ((char *)*(int *)args[0]);
             break;
         case SYS_FILESIZE:
-            f->eax = open ((char *)*(int *)args[0]);
+            f->eax = filesize ((int)*(int *)args[0]);
             break;
             /* yonghyuk */
         case SYS_WAIT:
-            f->eax = wait((int)*(int *)args[0]);
+            f->eax = wait ((int)*(int *)args[0]);
             break;
         case SYS_READ:
             f->eax = read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
             break;
         case SYS_WRITE:
-            f->eax = write((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
+            f->eax = write ((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
             break;
         case SYS_SEEK:
-            seek((int)*(int *)args[0], (unsigned)*(int *)args[1]);
+            seek ((int)*(int *)args[0], (unsigned)*(int *)args[1]);
             break;
         case SYS_TELL:
-            f->eax = tell((int)*(int *)args[0]);
+            f->eax = tell ((int)*(int *)args[0]);
             break;
         case SYS_CLOSE:
-            close((int)*(int *)args[0]);
+            close ((int)*(int *)args[0]);
+            break;
+        case SYS_PIBO:
+            f->eax = pibonacci ((int)*(int *)args[0]);
+            break;
+        case SYS_SUM:
+            f->eax = sum_of_four_integers ((int)*(int *)args[0], (int)*(int *)args[1], (int)*(int *)args[2], (int)*(int *)args[3]);
             break;
             /* Project 3 and optionally project 4. */
         case SYS_MMAP:
@@ -344,3 +337,10 @@ close ( int fd ){
     //list_remove (f);
 }
 
+int pibonacci (int n){
+    return n < 2 ? 1 : pibonacci (n -1) + pibonacci (n -2);
+}
+
+int sum_of_four_integers ( int a, int b, int c, int d ) {
+    return a + b + c + d;
+}

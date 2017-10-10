@@ -101,9 +101,9 @@ struct thread
     struct thread *parent;
     struct list child_list;             /* List for child process. */
     struct list_elem child_elem;        /* List element for child process. */
-    struct semaphore sema;              /* semaphore for thread syncronize */
+    struct semaphore load;/* semaphore for thread syncronize */
+    struct semaphore wait;
     struct file *file[MAX_FILE_NUM];     /* Array for file. */
-    
     int exit_status;
     /* ------------------------------------------- */
 
@@ -121,6 +121,8 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
+struct thread * find_child_by_tid (struct thread *, tid_t tid);
 
 void thread_init (void);
 void thread_start (void);
