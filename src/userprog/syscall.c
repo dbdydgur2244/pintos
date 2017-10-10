@@ -128,6 +128,8 @@ syscall_handler (struct intr_frame *f UNUSED)
             f->eax = wait ((int)*(int *)args[0]);
             break;
         case SYS_READ:
+            if(is_page_fault((char*)*(int*)args[1]))
+                exit(-1);
             f->eax = read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
             break;
         case SYS_WRITE:
@@ -213,6 +215,7 @@ exit (int status){
 pid_t
 exec (const char *cmd_line){
     pid_t tid=process_execute(cmd_line); 
+    
     if(tid == TID_ERROR) return tid;
     /*do i have something to do..?*/
     /*struct lock file_exe;
@@ -260,6 +263,7 @@ open (const char *file){
     struct thread *t = thread_current();
     int fd = -1, i; /* if cannot open file or invalid file, then return -1*/ 
     f = filesys_open (file);
+    if (f==NULL) return -1;
     for ( i = 2; i < MAX_FILE_NUM; ++i ){
         if ( t->file[i] == NULL){
             t->file[i] = f; fd = i;
@@ -289,6 +293,7 @@ read (int fd, void *buffer, unsigned size){
     char *buf = (char *)buffer;
     unsigned i;
     if ( fd == READ_FROM_KEYBORAD ){
+        if(is_page_fault(buffer)) return -1;
         for ( i = 0; i < size; ++i )
             buf[i] = (char )input_getc();
         return size;
