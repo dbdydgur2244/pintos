@@ -32,7 +32,7 @@ void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
     arg_addr = (char **) malloc ( sizeof (char *) * argnum);
     for ( i = argnum - 1; i >= 0; i-- ) {
         (*esp) -= ( strlen (args[i]) + 1 );
-        memcpy (*esp, args[i], strlen ( args[i] ) + 1);
+        memcpy (*esp, args[i], strlen (args[i]));
         arg_addr[i] = (char *)(*esp);
     }
 
@@ -45,7 +45,7 @@ void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
     }
 
     *esp -= 4;
-    *( (char **)*esp) = 0;
+    *( (int *)*esp) = 0;
 
     for(i = argnum - 1; i >= 0; i--){
         (*esp) -= 4;
@@ -58,7 +58,7 @@ void construct_ESP(void **esp,int argnum,char *args[arg_limit]){
     *( (int*)*esp ) = argnum;
     *esp -= 4;
     *( (int*)*esp ) = 0;
-
+    free(arg_addr);
 }
 
 /*parsing arguments, new function*/
@@ -92,11 +92,17 @@ process_execute (const char *file_name)
     if (fn_copy == NULL)
         return TID_ERROR;
     strlcpy (fn_copy, file_name, PGSIZE);
+
+    if ( file_open (file_name) == NULL ){
+        return -1;
+    }
+
     /* Create a new thread to execute FILE_NAME. */
     tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
     if (tid == TID_ERROR)
         palloc_free_page (fn_copy);
-    
+    /* add */
+    sema_down(&thread_current()->load);
     return tid;
 }
 
@@ -114,7 +120,8 @@ start_process (void *file_name_)
     if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
     if_.cs = SEL_UCSEG;
     if_.eflags = FLAG_IF | FLAG_MBS;
-    
+    /* add */
+    struct thread *child_t = thread_current();
 
     success = load (file_name, &if_.eip, &if_.esp);
 
@@ -122,9 +129,14 @@ start_process (void *file_name_)
     palloc_free_page (file_name);
     
     /* YH added */
-    if (!success) { 
+    if (!success) {
+        list_remove(&child_t->child_elem);
         thread_current()->exit_status = -1;
         thread_exit ();
+    }
+    else {
+        sema_up(&child_t->parent->load);
+        sema_down(&child_t->exec);
     }
     /* Start the user process by simulating a return from an
        interrupt, implemented by intr_exit (in
@@ -149,11 +161,13 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-    struct thread *child_t = find_child_by_tid (thread_current(), child_t);
+    struct thread *child_t = find_child_by_tid (thread_current(), child_tid);
     struct list_elem *e;
     int exit_status = -1;
     if ( child_t != NULL){
-    
+        sema_up(&child_t->exec);
+        sema_down(&thread_current()->wait);
+        exit_status=thread_current()->exit_status;
     }
     return exit_status;
 }
@@ -164,7 +178,6 @@ process_exit (void)
 {
     struct thread *cur = thread_current ();
     uint32_t *pd;
-
     /* Destroy the current process's page directory and switch back
        to the kernel-only page directory. */
     pd = cur->pagedir;
@@ -181,6 +194,7 @@ process_exit (void)
         pagedir_activate (NULL);
         pagedir_destroy (pd);
     }
+    sema_up(&cur->parent->wait);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -251,7 +265,7 @@ struct Elf32_Phdr
 #define PT_NULL    0            /* Ignore. */
 #define PT_LOAD    1            /* Loadable segment. */
 #define PT_DYNAMIC 2            /* Dynamic linking info. */
-#define PT_INTERP  3            /* Name of dynamic loader. */
+#define PT_INTERP  3            /* Name of dynamic noader. */
 #define PT_NOTE    4            /* Auxiliary info. */
 #define PT_SHLIB   5            /* Reserved. */
 #define PT_PHDR    6            /* Program header table. */
@@ -381,7 +395,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     *eip = (void (*) (void)) ehdr.e_entry;
 
     construct_ESP (esp, argnum, args);
-    hex_dump (*esp, *esp, (uint32_t)PHYS_BASE - (uint32_t) *esp, true);
+    //hex_dump (*esp, *esp, (uint32_t)PHYS_BASE - (uint32_t) *esp, true);
     success = true;
 
 done:

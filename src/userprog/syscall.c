@@ -5,6 +5,7 @@
 #include <syscall-nr.h>
 #include <list.h>
 #include <string.h>
+#include <console.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/synch.h"
@@ -24,7 +25,7 @@ syscall_init (void)
 void
 syscall_get_args(void *esp, void *args[], int syscallnum){
     if ( syscallnum != SYS_HALT )
-        args[0] = (int *)esp + 1;
+        args[0] = (void*)((int *)esp + 1);
     switch (syscallnum) {
         /* project #1 */
         case SYS_HALT:
@@ -36,7 +37,7 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
         case SYS_WAIT:
             break;
         case SYS_CREATE:
-            args[1] = (int *)esp + 2;
+            args[1] = (void*)((int *)esp + 2);
             break;
         case SYS_REMOVE:
             break;
@@ -45,15 +46,15 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
         case SYS_FILESIZE:
             break;
         case SYS_READ:
-            args[1] = (int *)esp + 2;
-            args[2] = (int *)esp + 3;
+            args[1] = (void*)((int *)esp + 2);
+            args[2] = (void*)((int *)esp + 3);
             break;
         case SYS_WRITE:
-            args[1] = (int *)esp + 2;
-            args[2] = (int *)esp + 3;
+            args[1] = (void*)((int *)esp + 2);
+            args[2] = (void*)((int *)esp + 3);
             break;
         case SYS_SEEK:
-            args[1] = (int *)esp + 2;
+            args[1] = (void*)((int *)esp + 2);
             break;
         case SYS_TELL:
             break;
@@ -78,8 +79,10 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
     }
     int i;
     for ( i = 0; i < 4; ++i ){
-        if ( args[i] != NULL )
-            is_page_fault((void *)*args);
+        if ( args[i] != NULL ) {
+            if ( is_page_fault((void *)*args) )
+                exit(-1);
+        }
     }
 }
 
@@ -103,12 +106,18 @@ syscall_handler (struct intr_frame *f UNUSED)
             f->eax = exec ((char *)*(int *)args[0]);
             break;
         case SYS_CREATE:
+            if ( is_page_fault ( (char *)*(int *)args[0] ) )
+                exit(-1);
             f->eax = create ((char *)*(int *)args[0], (unsigned)*(int *)args[1]);
             break;
         case SYS_REMOVE:
+            if ( is_page_fault ( (char *)*(int *)args[0] ) )
+                exit(-1);
             f->eax = remove ((char *)*(int *)args[0]);
             break;
         case SYS_OPEN:
+            if ( is_page_fault ( (char *)*(int *)args[0] ) )
+                exit(-1);
             f->eax = open ((char *)*(int *)args[0]);
             break;
         case SYS_FILESIZE:
@@ -122,7 +131,7 @@ syscall_handler (struct intr_frame *f UNUSED)
             f->eax = read ((int)*(int *)args[0], (void *)*(int *)args[1] , (size_t)*(int *)args[2]);
             break;
         case SYS_WRITE:
-            f->eax = write ((int)*(int *)args[0], (void *)(int *)args[1], (size_t)*(int *)args[2]);
+            f->eax = write ((int)*(int *)args[0], (void *)*(int *)args[1], (size_t)*(int *)args[2]);
             break;
         case SYS_SEEK:
             seek ((int)*(int *)args[0], (unsigned)*(int *)args[1]);
@@ -176,13 +185,25 @@ exit (int status){
     /* YH added
      * This is for close all opened files */
     struct thread *t = thread_current();
+    struct thread *parent = t->parent;
     int i;
     for ( i = 0; i < MAX_FILE_NUM; ++i ) {
         if ( t->file[i] != NULL )
             close(i);
     }
-    t->exit_status = status;
-    printf("%s: exit(%d)\n",t->name,status);
+    status = (status < -1) ? -1 : status;
+    parent->exit_status = status;
+    struct thread *tmp = find_child_by_tid(parent, t->tid);
+    if ( tmp != NULL )
+        list_remove(&tmp->child_elem);
+
+    char *name = malloc (sizeof(strlen(t->name) + 1));
+    char *next = NULL, *now = NULL;
+    strlcpy (name, t->name, strlen(t->name) + 1);
+    now = strtok_r (name, " ", &next);
+    printf("%s: exit(%d)\n", now, status);
+    free(name);
+    
     thread_exit();
 }
 
@@ -269,7 +290,7 @@ read (int fd, void *buffer, unsigned size){
     unsigned i;
     if ( fd == READ_FROM_KEYBORAD ){
         for ( i = 0; i < size; ++i )
-            buf[i] = input_getc();
+            buf[i] = (char )input_getc();
         return size;
     }
     else if ( fd < 0 || fd == 1) { } /* error */
@@ -291,8 +312,9 @@ read (int fd, void *buffer, unsigned size){
 #define WRITE_TO_CONSOLE 1
 int
 write (int fd, const void *buffer, unsigned size){
+    char *buf = (char *)buffer;
     if ( fd == WRITE_TO_CONSOLE ) {
-        putbuf(buffer, size);
+        putbuf(buf, size);
         return size;
     }
     else if ( fd <= 0 ) {} /* error */

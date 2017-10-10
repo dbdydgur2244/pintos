@@ -6,6 +6,8 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "userprog/syscall.h" 
+
 /* Number of page faults processed. */
 static long long page_fault_cnt;
 
@@ -152,6 +154,7 @@ page_fault (struct intr_frame *f)
       f->eip = f->eax;
       f->eax = 0xffffffff;
   }
+  exit(-1);
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
@@ -165,8 +168,8 @@ page_fault (struct intr_frame *f)
 
 int
 is_page_fault (void *vaddr){
-    if ( is_user_vaddr (vaddr) && vaddr >= (void *)0x08048000 )
+    if ( vaddr == NULL ) return true;
+    if ( is_user_vaddr (vaddr) && vaddr >= (void *)0x08048000  )
         return (int)false;
     return (int)true;
 }
-
