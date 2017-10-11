@@ -8,6 +8,7 @@
 #include <console.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/malloc.h"
 #include "threads/synch.h"
 #include "devices/input.h"
 #include "devices/shutdown.h"
@@ -214,8 +215,10 @@ exit (int status){
  * Must return pid -1. */
 pid_t
 exec (const char *cmd_line){
-    pid_t tid=process_execute(cmd_line); 
-    
+    //if(thread_current()->exit_status==-1) return -1;
+
+    pid_t tid=process_execute(cmd_line);
+    if ( thread_current()->exit_status == - 1) return -1;
     if(tid == TID_ERROR) return tid;
     /*do i have something to do..?*/
     /*struct lock file_exe;

@@ -130,8 +130,9 @@ start_process (void *file_name_)
     
     /* YH added */
     if (!success) {
-        list_remove(&child_t->child_elem);
-        thread_current()->exit_status = -1;
+        list_remove (&child_t->child_elem);
+        child_t->parent->exit_status = -1;
+        sema_up (&child_t->parent->load);
         thread_exit ();
     }
     else {
