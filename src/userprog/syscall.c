@@ -61,6 +61,14 @@ syscall_get_args(void *esp, void *args[], int syscallnum){
             break;
         case SYS_CLOSE:
             break;
+        case SYS_PIBO:
+            args[1] = (void*)((int*)esp+2);
+            break;
+        case SYS_SUM:
+            args[1] = (void*)((int*)esp+2);
+            args[2] = (void*)((int*)esp+3);
+            args[3] = (void*)((int*)esp+4);
+            break;
             /* Project 3 and optionally project 4. */
         case SYS_MMAP:
             break;
@@ -368,7 +376,15 @@ close ( int fd ){
 }
 
 int pibonacci (int n){
-    return n < 2 ? 1 : pibonacci (n -1) + pibonacci (n -2);
+    int i=1,k;
+    int temp1=1,temp2;
+    if(n<3) return 1;
+    for(k=3;k<=n;k++){
+        temp2=i+temp1;
+        i=temp1;
+        temp1=temp2;
+    }
+    return temp2;
 }
 
 int sum_of_four_integers ( int a, int b, int c, int d ) {
