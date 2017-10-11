@@ -103,6 +103,7 @@ struct thread
     struct list_elem child_elem;        /* List element for child process. */
     struct semaphore load;/* semaphore for thread syncronize */
     struct semaphore wait;
+    struct semaphore exec;
     struct file *file[MAX_FILE_NUM];     /* Array for file. */
     int exit_status;
     /* ------------------------------------------- */
