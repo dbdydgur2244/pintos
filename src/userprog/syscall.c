@@ -376,15 +376,13 @@ close ( int fd ){
 }
 
 int pibonacci (int n){
-    int i=1,k;
-    int temp1=1,temp2;
-    if(n<3) return 1;
-    for(k=3;k<=n;k++){
-        temp2=i+temp1;
-        i=temp1;
-        temp1=temp2;
+    int n1 = 1, n2 = 1, tmp, i;
+    if ( n < 0 ) return 0;
+    for ( i = 3 ; i <= n; i++){
+        n2 = (tmp = n2) + n1;
+        n1 = tmp;
     }
-    return temp2;
+    return n2;
 }
 
 int sum_of_four_integers ( int a, int b, int c, int d ) {
