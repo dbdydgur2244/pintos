@@ -93,10 +93,16 @@ process_execute (const char *file_name)
         return TID_ERROR;
     strlcpy (fn_copy, file_name, PGSIZE);
 
-    if ( file_open (file_name) == NULL ){
+    /*
+    struct file *f = file_open (file_name);
+    if ( f == NULL ){
         return -1;
     }
-    
+    else{
+        file_close (f);
+    }
+    */
+
     /* Create a new thread to execute FILE_NAME. */
     tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
     if (tid == TID_ERROR)
@@ -135,7 +141,10 @@ start_process (void *file_name_)
     /* YH added */
     if (!success) {
         list_remove (&child_t->child_elem);
-        child_t->parent->exit_status = -1;
+        /* YH added for project 2-2 */
+        struct status_info *s = find_status_by_tid (child_t->parent, child_t->tid);
+        s->status = -1;
+        //child_t->parent->exit_status = -1;
         sema_up (&child_t->parent->load);
         thread_exit ();
     }
@@ -171,7 +180,10 @@ process_wait (tid_t child_tid UNUSED)
     if ( child_t != NULL){
         sema_up(&child_t->exec);
         sema_down(&thread_current()->wait);
-        exit_status=thread_current()->exit_status;
+        //exit_status = thread_current()->exit_status;
+        /* YH added for project 2-2 */
+        struct status_info *s = find_status_by_tid (thread_current(), child_tid);
+        exit_status = s->status;
     }
     return exit_status;
 }
@@ -186,12 +198,26 @@ process_exit (void)
        to the kernel-only page directory. */
     
     /* YH added for project 2-2*/
-    
     struct file_info *fi = find_exec_by_name (cur->exec_name);
     if ( fi != NULL ) {
         list_remove (&fi->elem);
         free (fi); /* It must exist */
     }
+
+    int i;
+    for ( i = 2; i < MAX_FILE_NUM; ++i ) {
+        if ( cur->file[i] != NULL )
+            close(i);
+    }
+
+    struct status_info *s;
+    struct list_elem *e;
+    while ( !list_empty (&cur->status_list)){
+        e = list_pop_back (&cur->status_list);
+        s = list_entry (e, struct status_info, elem);
+        free(s);
+    }
+    /* ------ */
     
     pd = cur->pagedir;
     if (pd != NULL) 

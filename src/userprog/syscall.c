@@ -193,17 +193,17 @@ halt (void){
 void
 exit (int status){
 
-    /* YH added
-     * This is for close all opened files */
+    /* YH added */
     struct thread *t = thread_current();
     struct thread *parent = t->parent;
-    int i;
-    for ( i = 0; i < MAX_FILE_NUM; ++i ) {
-        if ( t->file[i] != NULL )
-            close(i);
-    }
     status = (status < -1) ? -1 : status;
-    parent->exit_status = status;
+    //parent->exit_status = status;
+    
+    /* YH added for project 2-2 */
+    struct status_info *s = find_status_by_tid (parent, t->tid);
+    s->status = status;
+    /* -------- */
+    
     struct thread *tmp = find_child_by_tid(parent, t->tid);
     if ( tmp != NULL )
         list_remove(&tmp->child_elem);
@@ -223,10 +223,13 @@ exit (int status){
  * Must return pid -1. */
 pid_t
 exec (const char *cmd_line){
-    //if(thread_current()->exit_status==-1) return -1;
 
-    pid_t tid=process_execute(cmd_line);
-    if ( thread_current()->exit_status == - 1) return -1;
+    pid_t tid = process_execute(cmd_line);
+    /* YH added for project 2-2 */
+    struct status_info *s = find_status_by_tid (thread_current(), tid);
+    if ( s->status == -1 ) return -1;
+    /* ---- */
+    //if ( thread_current()->exit_status == - 1) return -1;
     if(tid == TID_ERROR) return tid;
     /*do i have something to do..?*/
     /*struct lock file_exe;

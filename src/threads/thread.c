@@ -192,6 +192,12 @@ thread_create (const char *name, int priority,
     /* YH added */
     t->parent = thread_current();
     list_push_back (&t->parent->child_list, &t->child_elem);
+    
+    /* YH added for project 2-2 */
+    struct status_info *status = malloc (sizeof (struct status_info));
+    status->tid = tid;
+    status->status = 0;
+    list_push_back (&t->parent->status_list, &status->elem);
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -306,7 +312,6 @@ thread_exit (void)
 #ifdef USERPROG
   process_exit ();
 #endif
-
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
@@ -496,6 +501,9 @@ init_thread (struct thread *t, const char *name, int priority)
         t->file[i] = NULL;
     }
 
+    /* YH added for project 2-2 */
+    list_init (&t->status_list);
+
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -628,10 +636,25 @@ find_exec_by_name (const char *file_name){
     struct list_elem *e;
     //printf ("find_exec by name : %s\n", file_name);
     for ( e = list_begin (&exec_list); e != list_end (&exec_list);
-            e = list_next(e)){
+            e = list_next(e))
+    {
         struct file_info *f = list_entry (e, struct file_info, elem);
         if ( strcmp (f->file_name, file_name) == 0 ){
             return f;
+        }
+    }
+    return NULL;
+}
+
+struct status_info *
+find_status_by_tid (struct thread *cur, tid_t tid){
+    struct list_elem *e;
+    for ( e = list_begin(&cur->status_list); e != list_end(&cur->status_list);
+            e = list_next(e) )
+    {
+        struct status_info *status = list_entry (e, struct status_info, elem);
+        if ( status->tid == tid ){
+            return status;
         }
     }
     return NULL;

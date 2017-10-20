@@ -101,11 +101,13 @@ struct thread
     struct thread *parent;
     struct list child_list;             /* List for child process. */
     struct list_elem child_elem;        /* List element for child process. */
-    struct semaphore load;/* semaphore for thread syncronize */
+    struct semaphore load;              /* semaphore for thread syncronize */
     struct semaphore wait;
     struct semaphore exec;
     struct file *file[MAX_FILE_NUM];    /* Array for file. */
     int exit_status;
+
+    struct list status_list;            /* List for child status */
     char exec_name[100];                /* execute file name */
     /* ------------------------------------------- */
 
@@ -132,8 +134,15 @@ struct file_info
         struct list_elem elem;
     };
 
-struct thread * find_child_by_tid (struct thread *, tid_t tid);
+struct status_info
+    {
+        int tid;
+        int status;
+        struct list_elem elem;
+    };
 
+struct thread * find_child_by_tid (struct thread *, tid_t tid);
+struct status_info * find_status_by_tid (struct thread *, tid_t tid);
 struct file_info * find_exec_by_name (const char *file_name);
 void add_exec_file (const char *file_name);
 /* ************ */
