@@ -102,7 +102,7 @@ process_execute (const char *file_name)
     if (tid == TID_ERROR)
         palloc_free_page (fn_copy);
     
-    /* YH add */
+    /* YH added */
     sema_down(&thread_current()->load);
     return tid;
 }
@@ -185,7 +185,7 @@ process_exit (void)
     /* Destroy the current process's page directory and switch back
        to the kernel-only page directory. */
     
-    /* YH added */
+    /* YH added for project 2-2*/
     
     struct file_info *fi = find_exec_by_name (cur->exec_name);
     if ( fi != NULL ) {
@@ -418,7 +418,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 done:
     /* We arrive here whether the load is successful or not. */
     file_close (file);
-    //free (temp); /* YH added */
+    free (temp); /* YH added */
     return success;
 }
 /* load() helpers. */
