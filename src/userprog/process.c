@@ -96,12 +96,13 @@ process_execute (const char *file_name)
     if ( file_open (file_name) == NULL ){
         return -1;
     }
-
+    
     /* Create a new thread to execute FILE_NAME. */
     tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
     if (tid == TID_ERROR)
         palloc_free_page (fn_copy);
-    /* add */
+    
+    /* YH add */
     sema_down(&thread_current()->load);
     return tid;
 }
@@ -123,8 +124,11 @@ start_process (void *file_name_)
     /* add */
     struct thread *child_t = thread_current();
 
-    success = load (file_name, &if_.eip, &if_.esp);
+    /* YH added for project 2-2 */
+    strlcpy (child_t->exec_name, file_name, strlen(file_name) + 1);
+    add_exec_file (child_t->exec_name);
 
+    success = load (file_name, &if_.eip, &if_.esp);
     /* If load failed, quit. */
     palloc_free_page (file_name);
     
@@ -163,7 +167,6 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
     struct thread *child_t = find_child_by_tid (thread_current(), child_tid);
-    struct list_elem *e;
     int exit_status = -1;
     if ( child_t != NULL){
         sema_up(&child_t->exec);
@@ -181,6 +184,15 @@ process_exit (void)
     uint32_t *pd;
     /* Destroy the current process's page directory and switch back
        to the kernel-only page directory. */
+    
+    /* YH added */
+    
+    struct file_info *fi = find_exec_by_name (cur->exec_name);
+    if ( fi != NULL ) {
+        list_remove (&fi->elem);
+        free (fi); /* It must exist */
+    }
+    
     pd = cur->pagedir;
     if (pd != NULL) 
     {
@@ -305,13 +317,16 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
-  temp=(char*)malloc(sizeof(char)*(strlen(file_name)+1));
-  strlcpy(temp,file_name,strlen(file_name)+1);
 
-  argnum = parse_filename(temp,args);//parsing-Argument Passing
-  /* Open executable file. */
-  file = filesys_open (args[0]);
-  if (file == NULL) 
+    temp = (char *)malloc (sizeof (char) * (strlen (file_name) + 1));
+    strlcpy (temp,file_name,strlen(file_name)+1);
+
+    argnum = parse_filename(temp,args);//parsing-Argument Passing
+
+    /* pintos code .... */
+    /* Open executable file. */
+    file = filesys_open (args[0]);
+    if (file == NULL) 
     {
         printf ("load: %s: open failed\n", file_name);
         goto done; 
@@ -394,6 +409,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
     /* Start address. */
     *eip = (void (*) (void)) ehdr.e_entry;
+    /* pintos code end */
 
     construct_ESP (esp, argnum, args);
     //hex_dump (*esp, *esp, (uint32_t)PHYS_BASE - (uint32_t) *esp, true);
@@ -402,6 +418,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 done:
     /* We arrive here whether the load is successful or not. */
     file_close (file);
+    //free (temp); /* YH added */
     return success;
 }
 /* load() helpers. */

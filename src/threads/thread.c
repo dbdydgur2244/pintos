@@ -8,6 +8,7 @@
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
 #include "threads/palloc.h"
+#include "threads/malloc.h"
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
@@ -36,6 +37,10 @@ static struct thread *initial_thread;
 
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
+
+/* YH add */
+/* List of all exec file */
+static struct list exec_list;
 
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame 
@@ -91,14 +96,15 @@ thread_init (void)
 
   lock_init (&tid_lock);
   list_init (&ready_list);
-  list_init (&all_list);
-
+  list_init (&all_list);  
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+    /* YH added */
     initial_thread->parent = NULL;
+    list_init (&exec_list);
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -186,6 +192,7 @@ thread_create (const char *name, int priority,
     /* YH added */
     t->parent = thread_current();
     list_push_back (&t->parent->child_list, &t->child_elem);
+
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
      member cannot be observed. */
@@ -210,6 +217,11 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+    
+    /* YH added for project 2-2 */
+    int i;
+    for ( i = 0; i < 100; ++i )
+        t->exec_name[i] = '\0';
     return tid;
 }
 
@@ -609,6 +621,29 @@ find_child_by_tid(struct thread *cur, tid_t tid){
         }
     }
     return NULL;
+}
+
+struct file_info *
+find_exec_by_name (const char *file_name){
+    struct list_elem *e;
+    //printf ("find_exec by name : %s\n", file_name);
+    for ( e = list_begin (&exec_list); e != list_end (&exec_list);
+            e = list_next(e)){
+        struct file_info *f = list_entry (e, struct file_info, elem);
+        if ( strcmp (f->file_name, file_name) == 0 ){
+            return f;
+        }
+    }
+    return NULL;
+}
+
+/* add exec file information in exec list */
+void
+add_exec_file (const char *file_name){
+    struct file_info *fi;
+    fi = malloc (sizeof (struct file_info));
+    strlcpy (fi->file_name, file_name, strlen(file_name) + 1);
+    list_push_back (&exec_list, &fi->elem);
 }
 
 /* Offset of `stack' member within `struct thread'.

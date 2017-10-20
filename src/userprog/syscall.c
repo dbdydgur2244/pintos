@@ -260,6 +260,12 @@ create (const char *file, unsigned initial_size){
  * Returns true if successful, false otherwise. */
 bool
 remove (const char *file){
+
+    /* YH added for project 2-2 */
+    struct file_info *fi = find_exec_by_name (file);
+    if ( fi != NULL )
+        return false;
+    
     return filesys_remove (file);
 }
 
@@ -274,7 +280,7 @@ open (const char *file){
     struct thread *t = thread_current();
     int fd = -1, i; /* if cannot open file or invalid file, then return -1*/ 
     f = filesys_open (file);
-    if (f==NULL) return -1;
+    if ( f == NULL) return -1;
     for ( i = 2; i < MAX_FILE_NUM; ++i ){
         if ( t->file[i] == NULL){
             t->file[i] = f; fd = i;

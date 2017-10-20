@@ -26,7 +26,7 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 #define MAX_FILE_NUM 130                /* Maximum file number */
-
+#define MAX_FILE_NAME 15                /* Maximum file name(14) */
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -104,8 +104,9 @@ struct thread
     struct semaphore load;/* semaphore for thread syncronize */
     struct semaphore wait;
     struct semaphore exec;
-    struct file *file[MAX_FILE_NUM];     /* Array for file. */
+    struct file *file[MAX_FILE_NUM];    /* Array for file. */
     int exit_status;
+    char exec_name[100];                /* execute file name */
     /* ------------------------------------------- */
 
 #ifdef USERPROG
@@ -123,8 +124,19 @@ struct thread
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
 
+/* YH added */
+
+struct file_info
+    {
+        char file_name[100];
+        struct list_elem elem;
+    };
+
 struct thread * find_child_by_tid (struct thread *, tid_t tid);
 
+struct file_info * find_exec_by_name (const char *file_name);
+void add_exec_file (const char *file_name);
+/* ************ */
 void thread_init (void);
 void thread_start (void);
 
