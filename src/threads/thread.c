@@ -503,7 +503,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
     /* YH added for project 2-2 */
     list_init (&t->status_list);
-
+    t->exec_file = NULL;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -632,15 +632,14 @@ find_child_by_tid(struct thread *cur, tid_t tid){
 }
 
 struct file_info *
-find_exec_by_name (const char *file_name){
+find_exec_by_file (const struct file * f){
     struct list_elem *e;
-    //printf ("find_exec by name : %s\n", file_name);
     for ( e = list_begin (&exec_list); e != list_end (&exec_list);
             e = list_next(e))
     {
-        struct file_info *f = list_entry (e, struct file_info, elem);
-        if ( strcmp (f->file_name, file_name) == 0 ){
-            return f;
+        struct file_info *fi = list_entry (e, struct file_info, elem);
+        if ( fi->f == f ){
+            return fi;
         }
     }
     return NULL;
@@ -662,10 +661,10 @@ find_status_by_tid (struct thread *cur, tid_t tid){
 
 /* add exec file information in exec list */
 void
-add_exec_file (const char *file_name){
+add_exec_file (int fd, struct file *f){
     struct file_info *fi;
     fi = malloc (sizeof (struct file_info));
-    strlcpy (fi->file_name, file_name, strlen(file_name) + 1);
+    fi->fd = fd; fi->f = f;
     list_push_back (&exec_list, &fi->elem);
 }
 

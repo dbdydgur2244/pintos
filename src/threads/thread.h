@@ -105,6 +105,7 @@ struct thread
     struct semaphore wait;
     struct semaphore exec;
     struct file *file[MAX_FILE_NUM];    /* Array for file. */
+    struct file *exec_file;             /* thread executable file */
     int exit_status;
 
     struct list status_list;            /* List for child status */
@@ -120,7 +121,6 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
     bool wait_status;                    /* Detects wait_status. For project 1*/
   };
-
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -130,7 +130,8 @@ extern bool thread_mlfqs;
 
 struct file_info
     {
-        char file_name[100];
+        int fd;
+        struct file *f;
         struct list_elem elem;
     };
 
@@ -143,8 +144,8 @@ struct status_info
 
 struct thread * find_child_by_tid (struct thread *, tid_t tid);
 struct status_info * find_status_by_tid (struct thread *, tid_t tid);
-struct file_info * find_exec_by_name (const char *file_name);
-void add_exec_file (const char *file_name);
+struct file_info * find_exec_by_file (const struct file *f);
+void add_exec_file (int fd, struct file *f);
 /* ************ */
 void thread_init (void);
 void thread_start (void);

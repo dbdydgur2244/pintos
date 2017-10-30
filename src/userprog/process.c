@@ -131,8 +131,6 @@ start_process (void *file_name_)
     struct thread *child_t = thread_current();
 
     /* YH added for project 2-2 */
-    strlcpy (child_t->exec_name, file_name, strlen(file_name) + 1);
-    add_exec_file (child_t->exec_name);
 
     success = load (file_name, &if_.eip, &if_.esp);
     /* If load failed, quit. */
@@ -198,8 +196,8 @@ process_exit (void)
        to the kernel-only page directory. */
     
     /* YH added for project 2-2*/
-    struct file_info *fi = find_exec_by_name (cur->exec_name);
-    if ( fi != NULL ) {
+    if ( cur->exec_file != NULL ) {
+        struct file_info *fi = find_exec_by_file (cur->exec_file);
         list_remove (&fi->elem);
         free (fi); /* It must exist */
     }

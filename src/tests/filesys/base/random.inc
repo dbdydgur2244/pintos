@@ -38,8 +38,10 @@ test_main (void)
     {
       size_t ofs = BLOCK_SIZE * order[i];
       seek (fd, ofs);
-      if (write (fd, buf + ofs, BLOCK_SIZE) != BLOCK_SIZE)
-        fail ("write %d bytes at offset %zu failed", (int) BLOCK_SIZE, ofs);
+     // printf("%d\n",BLOCK_SIZE);
+     // printf("%d\n",write(fd, buf+ofs, BLOCK_SIZE));
+       if (write (fd, buf + ofs, BLOCK_SIZE) != BLOCK_SIZE)
+         fail ("write %d bytes at offset %zu failed", (int) BLOCK_SIZE, ofs);
     }
 
   msg ("read \"%s\" in random order", file_name);

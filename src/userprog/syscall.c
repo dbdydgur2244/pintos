@@ -263,12 +263,6 @@ create (const char *file, unsigned initial_size){
  * Returns true if successful, false otherwise. */
 bool
 remove (const char *file){
-
-    /* YH added for project 2-2 */
-    struct file_info *fi = find_exec_by_name (file);
-    if ( fi != NULL )
-        return false;
-    
     return filesys_remove (file);
 }
 
@@ -284,9 +278,14 @@ open (const char *file){
     int fd = -1, i; /* if cannot open file or invalid file, then return -1*/ 
     f = filesys_open (file);
     if ( f == NULL) return -1;
+    
+    /* YH added */
     for ( i = 2; i < MAX_FILE_NUM; ++i ){
         if ( t->file[i] == NULL){
             t->file[i] = f; fd = i;
+            if ( strcmp (t->name, file) == 0 ){
+                add_exec_file (i, f);
+            }
             break;
         }
     }
@@ -347,8 +346,17 @@ write (int fd, const void *buffer, unsigned size){
         struct file *f = thread_current()->file[fd];
         if ( f == NULL || is_page_fault (buffer) )
             return -1;
-        int bytes_written = (int)file_write (f, buffer, size);
-        file_deny_write (f);
+        int bytes_written = 0;
+        
+        if ( find_exec_by_file (f) != NULL){
+            /* doing something .... */
+        }
+
+        else {
+            file_allow_write(f);
+            bytes_written = (int)file_write (f, buffer, size);
+            file_deny_write (f);
+        }
         return bytes_written;
     }
     return -1;
