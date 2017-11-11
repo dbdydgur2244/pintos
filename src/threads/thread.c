@@ -142,6 +142,14 @@ thread_tick (void)
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
+#ifndef USERPROG
+    /* Project #3. */
+    thread_wake_up ();
+
+    /* Project #3. */
+    if (thread_prior_aging == true)
+        thread_aging ();
+#endif
 }
 
 /* Prints thread statistics. */
