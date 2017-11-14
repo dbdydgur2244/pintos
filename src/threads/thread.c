@@ -59,6 +59,11 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
 
+#ifndef USERPROG
+/* YH added for proj1 */
+bool thread_prior_aging;
+#endif
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -143,10 +148,7 @@ thread_tick (void)
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
 #ifndef USERPROG
-    /* Project #3. */
-    thread_wake_up ();
-
-    /* Project #3. */
+    /* YH added for proj1 */
     if (thread_prior_aging == true)
         thread_aging ();
 #endif
@@ -232,10 +234,6 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
     
-    /* YH added for project 2-2 */
-    int i;
-    for ( i = 0; i < 100; ++i )
-        t->exec_name[i] = '\0';
     return tid;
 }
 
@@ -675,6 +673,14 @@ add_exec_file (int fd, struct file *f){
     fi->fd = fd; fi->f = f;
     list_push_back (&exec_list, &fi->elem);
 }
+
+
+/* YH added for proj1 */
+void
+thread_aging (void){
+
+}
+
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */

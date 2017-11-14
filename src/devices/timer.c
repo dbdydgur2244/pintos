@@ -7,7 +7,8 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
-  
+#include <list.h>
+
 /* See [8254] for hardware details of the 8254 timer chip. */
 
 #if TIMER_FREQ < 19
@@ -29,6 +30,7 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
+static struct list sleep_list;
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -90,10 +92,15 @@ void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
-
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+    /* YH added for proj #1 */
+    enum intr_level old_level;
+    struct thread *cur = thread_current();
+    old_level = intr_disable();
+    cur->until_sleep = timer_ticks() + ticks;
+    list_push_back (&sleep_list, &cur->elem);
+    thread_block ();
+    intr_set_level (old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -171,6 +178,8 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+    /* YH added for proj1 */
+    wake_up_threads();
   thread_tick ();
 }
 
@@ -243,4 +252,25 @@ real_time_delay (int64_t num, int32_t denom)
      the possibility of overflow. */
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
+}
+
+void
+sleep_list_init(void){
+    list_init (&sleep_list);
+}
+
+/* YH added for proj1 */
+void
+wake_up_threads (void){
+    struct list_elem *e;
+    for ( e = list_begin (&sleep_list); e != list_end(&sleep_list); )
+    {
+        struct thread *t = list_entry (e, struct thread, elem);
+        if ( t->until_sleep <= ticks ) {
+            e = list_remove (e);
+            thread_unblock (t);
+        }
+        else
+            e = list_next (e);
+    }
 }

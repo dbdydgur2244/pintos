@@ -5,10 +5,10 @@
 #include <list.h>
 #include <stdint.h>
 #include "filesys/file.h"
-#include "synch.h"
+#include "threads/synch.h"
 
 #ifndef USERPROG
-/* Project #3. */
+/* YH added for proj1 */
 extern bool thread_prior_aging;
 #endif
 
@@ -111,10 +111,8 @@ struct thread
     struct semaphore exec;
     struct file *file[MAX_FILE_NUM];    /* Array for file. */
     struct file *exec_file;             /* thread executable file */
-    int exit_status;
-
     struct list status_list;            /* List for child status */
-    char exec_name[100];                /* execute file name */
+    int64_t until_sleep;                    /* sleep until this ticks*/
     /* ------------------------------------------- */
 
 #ifdef USERPROG
@@ -132,7 +130,6 @@ struct thread
 extern bool thread_mlfqs;
 
 /* YH added */
-
 struct file_info
     {
         int fd;
@@ -182,5 +179,9 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+/* YH added for proj1 */
+void thread_aging (void);
+
 
 #endif /* threads/thread.h */
