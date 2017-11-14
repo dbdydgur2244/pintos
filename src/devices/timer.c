@@ -91,7 +91,6 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
   ASSERT (intr_get_level () == INTR_ON);
     /* YH added for proj #1 */
     enum intr_level old_level;
@@ -254,6 +253,7 @@ real_time_delay (int64_t num, int32_t denom)
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
 }
 
+/* YH added for proj1 */
 void
 sleep_list_init(void){
     list_init (&sleep_list);

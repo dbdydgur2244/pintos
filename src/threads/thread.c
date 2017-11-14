@@ -240,7 +240,10 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-    
+   
+    /* YH added for proj1 */
+    if (priority > thread_get_priority ())
+        thread_yield ();
     return tid;
 }
 
@@ -374,7 +377,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+    /* YH added for proj1 */
+    int priority = thread_get_priority ();
+    thread_current ()->priority = new_priority;
+    if (new_priority < priority)
+        thread_yield ();
 }
 
 /* Returns the current thread's priority. */
@@ -544,8 +551,12 @@ next_thread_to_run (void)
 {
   if (list_empty (&ready_list))
     return idle_thread;
-  else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+  else {
+      /* YH added for proj 1 */
+      struct list_elem *max_elem = list_max (&ready_list, priority_comp, NULL);
+      list_remove (max_elem);
+      return list_entry (max_elem, struct thread, elem);
+  }
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -688,6 +699,14 @@ add_exec_file (int fd, struct file *f){
 void
 thread_aging (void){
 
+}
+
+
+/* YH added for proj1 */
+bool
+priority_comp (const struct list_elem *a, const struct list_elem *b, void *aux){
+    return (list_entry (a, struct thread, elem))->priority
+            < (list_entry (b, struct thread, elem))->priority;
 }
 
 

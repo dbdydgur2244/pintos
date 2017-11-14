@@ -133,7 +133,7 @@ struct thread
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
 
-/* YH added */
+/* YH added for proj2*/
 struct file_info
     {
         int fd;
@@ -152,6 +152,8 @@ struct thread * find_child_by_tid (struct thread *, tid_t tid);
 struct status_info * find_status_by_tid (struct thread *, tid_t tid);
 struct file_info * find_exec_by_file (const struct file *f);
 void add_exec_file (int fd, struct file *f);
+/* YH added for proj1 */
+bool priority_comp (const struct list_elem *a, const struct list_elem *b, void *aux);
 /* ************ */
 void thread_init (void);
 void thread_start (void);
