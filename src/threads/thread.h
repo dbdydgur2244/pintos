@@ -115,6 +115,10 @@ struct thread
     int64_t until_sleep;                    /* sleep until this ticks*/
     /* ------------------------------------------- */
 
+    /* JM */
+    int nice;
+    int recent_cpu;
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

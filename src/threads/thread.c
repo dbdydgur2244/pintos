@@ -110,6 +110,9 @@ thread_init (void)
     /* YH added */
     initial_thread->parent = NULL;
     list_init (&exec_list);
+    /* JM */
+    initial_thread->nice = 0;
+    initial_thread->recent_cpu = 0;// new thread : 0
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -203,6 +206,10 @@ thread_create (const char *name, int priority,
     t->parent = thread_current();
     list_push_back (&t->parent->child_list, &t->child_elem);
     
+    /* JM */
+    t->nice = t->parent->nice;
+    t->recent_cpu = t->parent->recent_cpu;
+
     /* YH added for project 2-2 */
     struct status_info *status = malloc (sizeof (struct status_info));
     status->tid = tid;
@@ -381,15 +388,17 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice UNUSED) 
 {
-  /* Not yet implemented. */
+    /*JM*/
+    //recalculates the thread's priority based on the new value
+    thread_current()->nice = nice;
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  /* JM  */
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
