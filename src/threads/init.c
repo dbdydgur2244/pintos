@@ -255,12 +255,13 @@ parse_options (char **argv)
 #endif
       else if (!strcmp (name, "-rs"))
         random_init (atoi (value));
-      else if (!strcmp (name, "-mlfqs"))
+      else if (!strcmp (name, "-mlfqs")){
         thread_mlfqs = true;
-#ifdef USERPROG
-      /* Project #3. */
+      }
+#ifndef USERPROG
+      /* YH added for proj1 */
       else if (!strcmp (name, "-aging"))
-          thread_prior_aging = true;
+          thread_aging ();
 #endif
 #ifdef USERPROG
       else if (!strcmp (name, "-ul"))

@@ -132,6 +132,7 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+extern int load_avg;
 
 /* YH added for proj2*/
 struct file_info
@@ -189,5 +190,33 @@ int thread_get_load_avg (void);
 /* YH added for proj1 */
 void thread_aging (void);
 
+/* JM */
+int int_to_f (int n);
+int float_toi(int x);
+int round_toi(int x);
+int add_f (int x, int y);
+int sub_f (int x, int y);
+int add_int (int x, int n);
+int sub_int (int x, int n);
+int mul_f(int x, int y);
+int mul_int(int x, int n);
+int div_f(int x, int y);
+int div_int(int x, int n);
 
+
+
+/* JM */
+void ready_thread_foreach (thread_action_func *, void *);
+void update_priority (void);
+void update_recent_cpu (void);
+
+/*
+void cal_priority (struct thread *t);
+void cal_recent_cpu (struct thread *t);
+*/
+void cal_priority(void);
+void cal_recent_cpu(void);
+
+int ready_threads_size (void);
+bool is_idle_thread (struct thread *t);
 #endif /* threads/thread.h */

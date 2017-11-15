@@ -32,6 +32,8 @@ static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 static struct list sleep_list;
 
+int load_avg;
+
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
@@ -177,9 +179,34 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
-    /* YH added for proj1 */
+    
+    /* JM */
+    int ready_threads = ready_threads_size ();
+    struct thread *curr = thread_current ();
     wake_up_threads();
-  thread_tick ();
+    
+    if ( !is_idle_thread (curr) ) ready_threads +=1;
+
+    if (thread_prior_aging || thread_mlfqs ){
+        if( !is_idle_thread (curr) )
+            curr->recent_cpu = add_int(curr->recent_cpu, 1);
+        if(timer_ticks () % TIMER_FREQ == 0) {
+            // update_recent_cpu ();
+           /* load_avg = add_f(
+                    mul_f(div_f(int_to_f(59),int_to_f(60)),load_avg),   
+                    mul_f(
+                         div_f(int_to_f(1),int_to_f(60)), int_to_f(ready_threads)
+                         )
+                );*/
+            load_avg = div_int(add_int(mul_int(load_avg,59),ready_threads),60);
+            cal_recent_cpu ();
+        }
+        if(timer_ticks () % 4 == 0 ) {
+            // update_priority ();
+            cal_priority ();
+        }
+    }
+  thread_tick ();  
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
