@@ -194,7 +194,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
             curr->recent_cpu = add_int (curr->recent_cpu, 1);
         
         if(timer_ticks () % TIMER_FREQ == 0) {
-            load_avg = div_int (59 * load_avg + int_to_f (ready_threads), 60);
+            load_avg = div_int (add_int (mul_int (load_avg, 59), ready_threads), 60);
             update_recent_cpu ();
         }
         if(timer_ticks () % 4 == 0) {
