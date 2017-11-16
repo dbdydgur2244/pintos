@@ -206,16 +206,16 @@ int div_int(int x, int n);
 
 
 /* JM */
-void ready_thread_foreach (thread_action_func *, void *);
+void ready_thread_foreach (thread_action_func *, void * UNUSED);
 void update_priority (void);
 void update_recent_cpu (void);
 
+void cal_priority (struct thread *t, void *aux UNUSED);
+void cal_recent_cpu (struct thread *t, void *aux UNUSED);
 /*
-void cal_priority (struct thread *t);
-void cal_recent_cpu (struct thread *t);
-*/
 void cal_priority(void);
 void cal_recent_cpu(void);
+*/
 
 int ready_threads_size (void);
 bool is_idle_thread (struct thread *t);

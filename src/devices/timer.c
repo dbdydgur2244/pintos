@@ -96,10 +96,10 @@ timer_sleep (int64_t ticks)
   ASSERT (intr_get_level () == INTR_ON);
     /* YH added for proj #1 */
     enum intr_level old_level;
-    struct thread *cur = thread_current();
+    struct thread *curr = thread_current();
     old_level = intr_disable();
-    cur->until_sleep = timer_ticks() + ticks;
-    list_push_back (&sleep_list, &cur->elem);
+    curr->until_sleep = timer_ticks() + ticks;
+    list_push_back (&sleep_list, &curr->elem);
     thread_block ();
     intr_set_level (old_level);
 }
@@ -185,25 +185,20 @@ timer_interrupt (struct intr_frame *args UNUSED)
     struct thread *curr = thread_current ();
     wake_up_threads();
     
-    if ( !is_idle_thread (curr) ) ready_threads +=1;
+    if (!is_idle_thread (curr))
+        ready_threads += 1;
 
-    if (thread_prior_aging || thread_mlfqs ){
-        if( !is_idle_thread (curr) )
-            curr->recent_cpu = add_int(curr->recent_cpu, 1);
+    if (thread_prior_aging || thread_mlfqs){
+        
+        if(!is_idle_thread (curr))
+            curr->recent_cpu = add_int (curr->recent_cpu, 1);
+        
         if(timer_ticks () % TIMER_FREQ == 0) {
-            // update_recent_cpu ();
-           /* load_avg = add_f(
-                    mul_f(div_f(int_to_f(59),int_to_f(60)),load_avg),   
-                    mul_f(
-                         div_f(int_to_f(1),int_to_f(60)), int_to_f(ready_threads)
-                         )
-                );*/
-            load_avg = div_int(add_int(mul_int(load_avg,59),ready_threads),60);
-            cal_recent_cpu ();
+            load_avg = div_int (59 * load_avg + int_to_f (ready_threads), 60);
+            update_recent_cpu ();
         }
-        if(timer_ticks () % 4 == 0 ) {
-            // update_priority ();
-            cal_priority ();
+        if(timer_ticks () % 4 == 0) {
+            update_priority ();
         }
     }
   thread_tick ();  

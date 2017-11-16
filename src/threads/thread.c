@@ -390,8 +390,9 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+  if (cur != idle_thread) {
+      list_push_back (&ready_list, &cur->elem);
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -453,11 +454,13 @@ thread_set_nice (int nice UNUSED)
     curr->priority = (curr->priority < PRI_MIN) ? PRI_MIN : curr->priority;
     curr->priority = (curr->priority > PRI_MAX) ? PRI_MAX : curr->priority;
 
-    struct thread *max_t = list_entry (
-            list_max (&ready_list, priority_comp, NULL), struct thread, elem
-            );
-    if (thread_get_priority () < max_t->priority) {
-        thread_yield ();
+    if (!list_empty (&ready_list) ){
+        struct thread *max_t = list_entry (
+                list_max (&ready_list, priority_comp, NULL), struct thread, elem
+                );
+        if (thread_get_priority () < max_t->priority) {
+            thread_yield ();
+        }
     }
 }
 
@@ -772,54 +775,24 @@ priority_comp (const struct list_elem *a, const struct list_elem *b, void *aux){
 /* JM */
 
 void
-ready_thread_foreach (thread_action_func *func, void *aux)
+ready_thread_foreach (thread_action_func *func, void *aux UNUSED)
 {
   struct list_elem *e;
 
   for (e = list_begin (&ready_list); e != list_end (&ready_list);
        e = list_next (e))
     {
-      struct thread *t = list_entry (e, struct thread, allelem);
+      struct thread *t = list_entry (e, struct thread, elem);
       func (t, aux);
     }
 }
 
 void
 update_priority (void){
-    ready_thread_foreach (cal_priority, NULL);
-    struct thread *max_t = list_entry (
-            list_max (&ready_list, priority_comp, NULL), struct thread, elem
-        );
-    if (thread_get_priority () < max_t->priority) {
-        intr_yield_on_return();
-    }
-}
-
-void
-update_recent_cpu (void){
-    ready_thread_foreach (cal_recent_cpu, NULL);
-}
-
-void
-cal_priority(void){
-    struct list_elem *e;
-    for(e = list_begin (&ready_list); e != list_end (&ready_list);
-            e = list_next (e))
-    {
-        struct thread *t = list_entry (e,struct thread, elem);
-        if ( t != idle_thread ) {
-            t->priority = float_toi(
-                    sub_int (
-                        sub_f (int_to_f (PRI_MAX), div_int (t->recent_cpu, 4))
-                            , (t->nice) * 2
-                        )
-                );
-            t->priority = (t->priority < PRI_MIN) ? PRI_MIN : t->priority;
-            t->priority = (t->priority > PRI_MAX) ? PRI_MAX : t->priority;
-        }
-    }
-
-    if (list_empty (&ready_list) != true){
+    
+    //ready_thread_foreach (cal_priority, NULL);
+    thread_foreach (cal_priority, NULL);
+    if (!list_empty (&ready_list)) {
         struct thread *max_t = list_entry (
                 list_max (&ready_list, priority_comp, NULL), struct thread, elem
                 );
@@ -829,40 +802,34 @@ cal_priority(void){
     }
 }
 
-void cal_recent_cpu(void){
-    struct list_elem *e;
-    for (e = list_begin(&ready_list); e != list_end(&ready_list);e= list_next(e) ){
-        struct thread *t = list_entry (e, struct thread, elem);
-        if ( t != idle_thread ) {
-            t->recent_cpu = add_int(
-                    mul_f(
-                        div_f(2*load_avg, add_int(2*load_avg,1))
-                        , t->recent_cpu
-                        )
-                    , t->nice );
-        }
-    }
-}
-
-/*
 void
-cal_priority (struct thread *t){
-    t->priority = sub_int (
-                sub_f (int_to_f (PRI_MAX), div_int (t->recent_cpu,4)), (t->nice) * 2
-            );
-    t->priority = (t->priority < PRI_MIN) ?
-        PRI_MIN : ((t->priority > PRI_MAX) ? PRI_MAX : t->priority);
+update_recent_cpu (void){
+    //ready_thread_foreach (cal_recent_cpu, NULL);
+    thread_foreach (cal_recent_cpu, NULL);
 }
 
-void cal_recent_cpu(struct thread *t){
+void
+cal_priority (struct thread *t, void *aux UNUSED) {
+
+    t->priority = float_toi(
+            sub_int (
+                sub_f (int_to_f (PRI_MAX), div_int (t->recent_cpu, 4))
+                , (t->nice) * 2
+                )
+            );
+    t->priority = (t->priority < PRI_MIN) ? PRI_MIN : t->priority;
+    t->priority = (t->priority > PRI_MAX) ? PRI_MAX : t->priority;
+}
+
+void cal_recent_cpu(struct thread *t, void *aux UNUSED){
+
     t->recent_cpu = add_int(
             mul_f(
-                div_f(int_to_f(2*load_avg), add_int(int_to_f(2*load_avg),1))
-                    , int_to_f(t->recent_cpu)
-            ), t->nice
-        );
+                div_f(2 * load_avg, add_int (2 * load_avg, 1))
+                , t->recent_cpu
+                )
+            , t->nice );
 }
-*/
 
 int
 ready_threads_size (void){
