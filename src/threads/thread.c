@@ -762,7 +762,13 @@ add_exec_file (int fd, struct file *f){
 /* YH added for proj1 */
 void
 thread_aging (void){
-    thread_prior_aging = true;
+    struct list_elem *e;
+    for(e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next(e)){
+        struct thread *t = list_entry (e,struct thread,elem);
+        t->priority++;
+        t->priority = t->priority < PRI_MAX ? t->priority : PRI_MAX;
+        
+    }
 }
 
 

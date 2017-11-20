@@ -261,7 +261,7 @@ parse_options (char **argv)
 #ifndef USERPROG
       /* YH added for proj1 */
       else if (!strcmp (name, "-aging"))
-          thread_aging ();
+            thread_prior_aging = true;
 #endif
 #ifdef USERPROG
       else if (!strcmp (name, "-ul"))

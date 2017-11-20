@@ -188,19 +188,30 @@ timer_interrupt (struct intr_frame *args UNUSED)
     if (!is_idle_thread (curr))
         ready_threads += 1;
 
-    if (thread_prior_aging || thread_mlfqs){
+    if(thread_prior_aging && timer_ticks () % TIMER_FREQ == 0){
+        thread_aging();
+        return;
+    }
+
+        
+    if (thread_mlfqs){
         
         if(!is_idle_thread (curr))
             curr->recent_cpu = add_int (curr->recent_cpu, 1);
         
         if(timer_ticks () % TIMER_FREQ == 0) {
-            load_avg = div_int (add_int (mul_int (load_avg, 59), ready_threads), 60);
+            load_avg = add_f(
+                        mul_f(div_f(int_to_f(59), int_to_f(60)),load_avg),
+                        mul_f(div_f(int_to_f(1), int_to_f(60)), int_to_f(ready_threads))
+                    );
             update_recent_cpu ();
         }
         if(timer_ticks () % 4 == 0) {
             update_priority ();
         }
     }
+
+
   thread_tick ();  
 }
 
