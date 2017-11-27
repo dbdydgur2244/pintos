@@ -6,7 +6,9 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/palloc.h"
 #include "userprog/syscall.h" 
+#include "userprog/pagedir.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -149,21 +151,52 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
-  
-  if(user != 0){/*page fault in the kernel merely sets this*/
-      f->eip = f->eax;
-      f->eax = 0xffffffff;
-  }
-  exit(-1);
-  /* To implement virtual memory, delete the rest of the function
+
+  /* YH added for project 3 */
+    if (!not_present || !write || !user || fault_addr == NULL){
+        exit (-1);
+    }
+
+    if (is_user_vaddr (fault_addr)){
+        size_t page_num = (PHYS_BASE - pg_round_down (fault_addr)) / PGSIZE;
+        if (page_num > 2048){
+            exit(-1);
+        }
+        void *grow_ps = pg_round_down (fault_addr);
+        void *range_point;
+
+        for (range_point = PHYS_BASE - PGSIZE; range_point >= pg_round_up (fault_addr);
+                range_point -= PGSIZE)
+        {
+            if (pagedir_get_page (thread_current ()->pagedir, range_point) == NULL)
+                break;
+            --page_num;
+        }
+        for (; page_num != 0; --page_num){
+            void *page_temp = palloc_get_page (PAL_USER);
+            if (page_temp != NULL){
+                pagedir_set_page (thread_current ()->pagedir, grow_ps, page_temp, true);
+            }
+            else{
+                exit (-1);
+            }
+            grow_ps += PGSIZE;
+        }
+    }
+    else{
+        exit(-1);
+    }
+
+    /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
+    /*
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel");
-  kill (f);
+    */
 }
 
 int

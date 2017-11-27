@@ -59,11 +59,6 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
 
-#ifndef USERPROG
-/* YH added for proj1 */
-bool thread_prior_aging;
-#endif
-
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -81,9 +76,6 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
-/* JM */
-static const int F = 1<<14;
-
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -97,43 +89,6 @@ static const int F = 1<<14;
 
    It is not safe to call thread_current() until this function
    finishes. */
-
-/* JM */
-int int_to_f (int n){
-    return n * F;
-}
-int float_toi(int x){
-    return x / F;
-}
-int round_toi(int x){
-    return x >= 0 ? (x + F / 2) / F : (x - F / 2) / F;
-}
-int add_f (int x, int y){
-    return x + y;
-}
-int sub_f (int x, int y){
-    return x - y;
-}
-int add_int (int x, int n){
-    return x + n * F;
-}
-int sub_int (int x, int n){
-    return x - n * F;
-}
-int mul_f(int x, int y){
-    return ((int64_t)x) * y / F;
-}
-int mul_int(int x, int n){
-    return x * n;
-}
-int div_f(int x, int y){
-    return ((int64_t) x) * F / y;
-}
-int div_int(int x, int n){
-    return x / n;
-}
-
- 
 void
 thread_init (void) 
 {
@@ -150,10 +105,6 @@ thread_init (void)
     /* YH added */
     initial_thread->parent = NULL;
     list_init (&exec_list);
-    /* JM */
-    initial_thread->nice = 0;
-    initial_thread->recent_cpu = 0;// new thread : 0
-    load_avg = 0;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -191,11 +142,6 @@ thread_tick (void)
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
-#ifndef USERPROG
-    /* YH added for proj1 */
-    if (thread_prior_aging == true)
-        thread_aging ();
-#endif
 }
 
 /* Prints thread statistics. */
@@ -247,10 +193,6 @@ thread_create (const char *name, int priority,
     t->parent = thread_current();
     list_push_back (&t->parent->child_list, &t->child_elem);
     
-    /* JM */
-    t->nice = t->parent->nice;
-    t->recent_cpu = t->parent->recent_cpu;
-
     /* YH added for project 2-2 */
     struct status_info *status = malloc (sizeof (struct status_info));
     status->tid = tid;
@@ -281,10 +223,11 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-   
-    /* YH added for proj1 */
-    if (priority > thread_get_priority ())
-        thread_yield ();
+    
+    /* YH added for project 2-2 */
+    int i;
+    for ( i = 0; i < 100; ++i )
+        t->exec_name[i] = '\0';
     return tid;
 }
 
@@ -390,9 +333,8 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) {
-      list_push_back (&ready_list, &cur->elem);
-  }
+  if (cur != idle_thread) 
+    list_push_back (&ready_list, &cur->elem);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -419,13 +361,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-    /* YH added for proj1 */
-    if ( thread_mlfqs == true)
-        return;
-    int priority = thread_get_priority ();
-    thread_current ()->priority = new_priority;
-    if (new_priority < priority)
-        thread_yield ();
+  thread_current ()->priority = new_priority;
 }
 
 /* Returns the current thread's priority. */
@@ -439,37 +375,15 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice UNUSED) 
 {
-    /*JM*/
-    //recalculates the thread's priority based on the new value
-    struct thread *curr = thread_current ();
-    curr->nice = nice;
-    
-    // cal_priority (curr);
-   
-    curr->priority = float_toi(
-            sub_int (
-                sub_f (int_to_f (PRI_MAX), div_int (curr->recent_cpu, 4)), (curr->nice) * 2
-                )
-            );
-    curr->priority = (curr->priority < PRI_MIN) ? PRI_MIN : curr->priority;
-    curr->priority = (curr->priority > PRI_MAX) ? PRI_MAX : curr->priority;
-
-    if (!list_empty (&ready_list) ){
-        struct thread *max_t = list_entry (
-                list_max (&ready_list, priority_comp, NULL), struct thread, elem
-                );
-        if (thread_get_priority () < max_t->priority) {
-            thread_yield ();
-        }
-    }
+  /* Not yet implemented. */
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* JM  */
-  return thread_current()->nice;
+  /* Not yet implemented. */
+  return 0;
 }
 
 /* Returns 100 times the system load average. */
@@ -477,7 +391,7 @@ int
 thread_get_load_avg (void) 
 {
   /* Not yet implemented. */
-  return round_toi(mul_int(load_avg,100));
+  return 0;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -485,7 +399,7 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Not yet implemented. */
-    return round_toi(mul_int(thread_current()->recent_cpu,100));
+  return 0;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -615,12 +529,8 @@ next_thread_to_run (void)
 {
   if (list_empty (&ready_list))
     return idle_thread;
-  else {
-      /* YH added for proj 1 */
-      struct list_elem *max_elem = list_max (&ready_list, priority_comp, NULL);
-      list_remove (max_elem);
-      return list_entry (max_elem, struct thread, elem);
-  }
+  else
+    return list_entry (list_pop_front (&ready_list), struct thread, elem);
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -757,96 +667,6 @@ add_exec_file (int fd, struct file *f){
     fi->fd = fd; fi->f = f;
     list_push_back (&exec_list, &fi->elem);
 }
-
-
-/* YH added for proj1 */
-void
-thread_aging (void){
-    struct list_elem *e;
-    for(e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next(e)){
-        struct thread *t = list_entry (e,struct thread,elem);
-        t->priority++;
-        t->priority = t->priority < PRI_MAX ? t->priority : PRI_MAX;
-        
-    }
-}
-
-
-/* YH added for proj1 */
-bool
-priority_comp (const struct list_elem *a, const struct list_elem *b, void *aux){
-    return (list_entry (a, struct thread, elem))->priority
-            < (list_entry (b, struct thread, elem))->priority;
-}
-/* JM */
-
-void
-ready_thread_foreach (thread_action_func *func, void *aux UNUSED)
-{
-  struct list_elem *e;
-
-  for (e = list_begin (&ready_list); e != list_end (&ready_list);
-       e = list_next (e))
-    {
-      struct thread *t = list_entry (e, struct thread, elem);
-      func (t, aux);
-    }
-}
-
-void
-update_priority (void){
-    
-    //ready_thread_foreach (cal_priority, NULL);
-    thread_foreach (cal_priority, NULL);
-    if (!list_empty (&ready_list)) {
-        struct thread *max_t = list_entry (
-                list_max (&ready_list, priority_comp, NULL), struct thread, elem
-                );
-        if (thread_get_priority () < max_t->priority) {
-            intr_yield_on_return();
-        }
-    }
-}
-
-void
-update_recent_cpu (void){
-    //ready_thread_foreach (cal_recent_cpu, NULL);
-    thread_foreach (cal_recent_cpu, NULL);
-}
-
-void
-cal_priority (struct thread *t, void *aux UNUSED) {
-
-    t->priority = float_toi(
-            sub_int (
-                sub_f (int_to_f (PRI_MAX), div_int (t->recent_cpu, 4))
-                , (t->nice) * 2
-                )
-            );
-    t->priority = (t->priority < PRI_MIN) ? PRI_MIN : t->priority;
-    t->priority = (t->priority > PRI_MAX) ? PRI_MAX : t->priority;
-}
-
-void cal_recent_cpu(struct thread *t, void *aux UNUSED){
-
-    t->recent_cpu = add_int(
-            mul_f(
-                div_f(2 * load_avg, add_int (2 * load_avg, 1))
-                , t->recent_cpu
-                )
-            , t->nice );
-}
-
-int
-ready_threads_size (void){
-    return list_size (&ready_list);
-}
-
-bool
-is_idle_thread (struct thread *t){
-    return (t == idle_thread);
-}
-
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */

@@ -7,8 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
-#include <list.h>
-
+  
 /* See [8254] for hardware details of the 8254 timer chip. */
 
 #if TIMER_FREQ < 19
@@ -30,9 +29,6 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
-static struct list sleep_list;
-
-int load_avg;
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -93,15 +89,11 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+  int64_t start = timer_ticks ();
+
   ASSERT (intr_get_level () == INTR_ON);
-    /* YH added for proj #1 */
-    enum intr_level old_level;
-    struct thread *curr = thread_current();
-    old_level = intr_disable();
-    curr->until_sleep = timer_ticks() + ticks;
-    list_push_back (&sleep_list, &curr->elem);
-    thread_block ();
-    intr_set_level (old_level);
+  while (timer_elapsed (start) < ticks) 
+    thread_yield ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -179,40 +171,7 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
-    
-    /* JM */
-    int ready_threads = ready_threads_size ();
-    struct thread *curr = thread_current ();
-    wake_up_threads();
-    
-    if (!is_idle_thread (curr))
-        ready_threads += 1;
-
-    if(thread_prior_aging && timer_ticks () % TIMER_FREQ == 0){
-        thread_aging();
-        return;
-    }
-
-        
-    if (thread_mlfqs){
-        
-        if(!is_idle_thread (curr))
-            curr->recent_cpu = add_int (curr->recent_cpu, 1);
-        
-        if(timer_ticks () % TIMER_FREQ == 0) {
-            load_avg = add_f(
-                        mul_f(div_f(int_to_f(59), int_to_f(60)),load_avg),
-                        mul_f(div_f(int_to_f(1), int_to_f(60)), int_to_f(ready_threads))
-                    );
-            update_recent_cpu ();
-        }
-        if(timer_ticks () % 4 == 0) {
-            update_priority ();
-        }
-    }
-
-
-  thread_tick ();  
+  thread_tick ();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
@@ -284,26 +243,4 @@ real_time_delay (int64_t num, int32_t denom)
      the possibility of overflow. */
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
-}
-
-/* YH added for proj1 */
-void
-sleep_list_init(void){
-    list_init (&sleep_list);
-}
-
-/* YH added for proj1 */
-void
-wake_up_threads (void){
-    struct list_elem *e;
-    for ( e = list_begin (&sleep_list); e != list_end(&sleep_list); )
-    {
-        struct thread *t = list_entry (e, struct thread, elem);
-        if ( t->until_sleep <= ticks ) {
-            e = list_remove (e);
-            thread_unblock (t);
-        }
-        else
-            e = list_next (e);
-    }
 }

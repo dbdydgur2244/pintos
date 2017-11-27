@@ -5,12 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "filesys/file.h"
-#include "threads/synch.h"
-
-#ifndef USERPROG
-/* YH added for proj1 */
-extern bool thread_prior_aging;
-#endif
+#include "synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -111,13 +106,11 @@ struct thread
     struct semaphore exec;
     struct file *file[MAX_FILE_NUM];    /* Array for file. */
     struct file *exec_file;             /* thread executable file */
-    struct list status_list;            /* List for child status */
-    int64_t until_sleep;                    /* sleep until this ticks*/
-    /* ------------------------------------------- */
+    int exit_status;
 
-    /* JM */
-    int nice;
-    int recent_cpu;
+    struct list status_list;            /* List for child status */
+    char exec_name[100];                /* execute file name */
+    /* ------------------------------------------- */
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -132,9 +125,9 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
-extern int load_avg;
 
-/* YH added for proj2*/
+/* YH added */
+
 struct file_info
     {
         int fd;
@@ -153,8 +146,6 @@ struct thread * find_child_by_tid (struct thread *, tid_t tid);
 struct status_info * find_status_by_tid (struct thread *, tid_t tid);
 struct file_info * find_exec_by_file (const struct file *f);
 void add_exec_file (int fd, struct file *f);
-/* YH added for proj1 */
-bool priority_comp (const struct list_elem *a, const struct list_elem *b, void *aux);
 /* ************ */
 void thread_init (void);
 void thread_start (void);
@@ -187,36 +178,4 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-/* YH added for proj1 */
-void thread_aging (void);
-
-/* JM */
-int int_to_f (int n);
-int float_toi(int x);
-int round_toi(int x);
-int add_f (int x, int y);
-int sub_f (int x, int y);
-int add_int (int x, int n);
-int sub_int (int x, int n);
-int mul_f(int x, int y);
-int mul_int(int x, int n);
-int div_f(int x, int y);
-int div_int(int x, int n);
-
-
-
-/* JM */
-void ready_thread_foreach (thread_action_func *, void * UNUSED);
-void update_priority (void);
-void update_recent_cpu (void);
-
-void cal_priority (struct thread *t, void *aux UNUSED);
-void cal_recent_cpu (struct thread *t, void *aux UNUSED);
-/*
-void cal_priority(void);
-void cal_recent_cpu(void);
-*/
-
-int ready_threads_size (void);
-bool is_idle_thread (struct thread *t);
 #endif /* threads/thread.h */

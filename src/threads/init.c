@@ -89,8 +89,7 @@ main (void)
      then enable console locking. */
   thread_init ();
   console_init ();  
-    /* YH added for proj1 */
-    sleep_list_init ();
+
   /* Greet user. */
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",
           init_ram_pages * PGSIZE / 1024);
@@ -255,14 +254,8 @@ parse_options (char **argv)
 #endif
       else if (!strcmp (name, "-rs"))
         random_init (atoi (value));
-      else if (!strcmp (name, "-mlfqs")){
+      else if (!strcmp (name, "-mlfqs"))
         thread_mlfqs = true;
-      }
-#ifndef USERPROG
-      /* YH added for proj1 */
-      else if (!strcmp (name, "-aging"))
-            thread_prior_aging = true;
-#endif
 #ifdef USERPROG
       else if (!strcmp (name, "-ul"))
         user_page_limit = atoi (value);

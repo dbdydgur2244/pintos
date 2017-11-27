@@ -355,7 +355,7 @@ write (int fd, const void *buffer, unsigned size){
         else {
             file_allow_write(f);
             bytes_written = (int)file_write (f, buffer, size);
-            file_deny_write(f);
+            file_deny_write (f);
         }
         return bytes_written;
     }
