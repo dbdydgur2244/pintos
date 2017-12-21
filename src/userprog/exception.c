@@ -15,6 +15,7 @@ static long long page_fault_cnt;
 
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
+inline int get_page_num (void *fault_addr, size_t page_num);
 /* Registers handlers for interrupts that can be caused by user
    programs.
 
@@ -158,45 +159,42 @@ page_fault (struct intr_frame *f)
     }
 
     if (is_user_vaddr (fault_addr)){
-        size_t page_num = (PHYS_BASE - pg_round_down (fault_addr)) / PGSIZE;
+        void *round_down_addr = pg_round_down (fault_addr);
+        size_t page_num = (PHYS_BASE - round_down_addr) / PGSIZE;
         if (page_num > 2048){
             exit(-1);
         }
-        void *grow_ps = pg_round_down (fault_addr);
-        void *range_point;
 
-        for (range_point = PHYS_BASE - PGSIZE; range_point >= pg_round_up (fault_addr);
-                range_point -= PGSIZE)
-        {
-            if (pagedir_get_page (thread_current ()->pagedir, range_point) == NULL)
-                break;
-            --page_num;
-        }
+        page_num = get_page_num (fault_addr, page_num);
         for (; page_num != 0; --page_num){
-            void *page_temp = palloc_get_page (PAL_USER);
-            if (page_temp != NULL){
-                pagedir_set_page (thread_current ()->pagedir, grow_ps, page_temp, true);
+            void *page = palloc_get_page (PAL_USER);
+            if (page != NULL){
+                pagedir_set_page (thread_current ()->pagedir, round_down_addr, page, true);
             }
             else{
                 exit (-1);
             }
-            grow_ps += PGSIZE;
+            round_down_addr += PGSIZE;
         }
     }
     else{
         exit(-1);
     }
+}
 
-    /* To implement virtual memory, delete the rest of the function
-     body, and replace it with code that brings in the page to
-     which fault_addr refers. */
-    /*
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-          user ? "user" : "kernel");
-    */
+inline int
+get_page_num (void *fault_addr, size_t page_num){
+    void *round_up_addr = pg_round_up (fault_addr);
+    void *addr_point;
+    for (addr_point = PHYS_BASE - PGSIZE; addr_point >= round_up_addr;
+            addr_point -= PGSIZE)
+    {
+        if (pagedir_get_page (thread_current ()->pagedir, addr_point) == NULL)
+            break;
+        --page_num;
+    }
+
+    return page_num;
 }
 
 int
